@@ -21,12 +21,20 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class FootballBot extends TelegramLongPollingBot {
 
+    private final PlayersSelector playersSelector = new PlayersSelector();
+
     /**
      * TODO переместить это в БД
      * Возможно при наличии базы не нужны будут попытки определить следующий шаг через if, если пользака нет в базе,
      * то просто шлем ему дефолтную информацию, а все остальные сценарии через колбэки
      */
     private final Map<Long, Step> userCurrentStep = new ConcurrentHashMap<>();
+    /**
+     * TODO переместить это в БД
+     * Один пользак может одновременно иметь только один игровой день
+     */
+    private final Map<Long, GameDayData> userRosters = new ConcurrentHashMap<>();
+
 
     public FootballBot(@Value("${bot.token}") String botToken) {
         super(botToken);
@@ -53,30 +61,45 @@ public class FootballBot extends TelegramLongPollingBot {
          * нужно протестировать такое решение
          * */
 
-        if (update.hasMessage() && update.getMessage().hasText()) {
-            Long chatId = update.getMessage().getChatId();
-            String message = update.getMessage().getText();
-            var currentUserStep = userCurrentStep.computeIfAbsent(chatId, s -> Step.START);
+        Long chatId;
+        String message;
 
-            var nextStep = Step.getNextStep(Step.fromConsoleCommand(message).getConsoleCommand());
-            var keyboard = createKeyBoard(nextStep);
-            sendMessage(chatId, keyboard);
+        if (update.hasMessage() && update.getMessage().hasText()) {
+
+            chatId = update.getMessage().getChatId();
+            message = update.getMessage().getText();
 
         } else if (update.hasCallbackQuery()) {
 
-            //TODO протестировать момент когда пользак выбирает команду из нескольких доступных и что переходы между ними осуществляются корректно
-            var tempCurrentStep = Step.fromConsoleCommand(update.getCallbackQuery().getData());
-            //TODO обработать вариант, когда была послана неверная команда, вернулся UNKNOWN и нужно вернуть пользака на предыдущий шаг
-//            if(Step.UNKNOWN.equals(tempCurrentStep)){
-//
-//            }
-            var chatId = update.getCallbackQuery().getMessage().getChatId();
-            var currentUserStep = userCurrentStep.computeIfAbsent(chatId, s -> Step.START);
-            var nextStep = defineNextStep(chatId, tempCurrentStep.getConsoleCommand());
-            var keyboard = createKeyBoard(nextStep);
-            userCurrentStep.put(chatId, tempCurrentStep);
-            sendMessage(chatId, keyboard);
+            chatId = update.getCallbackQuery().getMessage().getChatId();
+            message = update.getCallbackQuery().getData();
+
+        } else {
+            chatId = 0L;
+            message = Step.UNKNOWN.getConsoleCommand();
         }
+
+        //TODO протестировать момент когда пользак выбирает команду из нескольких доступных и что переходы между ними осуществляются корректно
+        //TODO отправить сообщение, что такой команды/шага нет, и вернуть на предыдущий/стартовый шаг
+        //TODO обработать вариант, когда вернулся UNKNOWN и нужно вернуть пользака на предыдущий шаг
+        //TODO отработать вариант проверки, что человек не ввел руками неверный следующий шаг, допустим после START нельзя сразу выбирать составы
+        var previousUserStep = userCurrentStep.computeIfAbsent(chatId, s -> Step.START);
+        var selectedStep = Step.fromConsoleCommand(message);
+
+        //Сейчас будут костыли, но пока не знаю как вынести весь подпроцесс выбора игроков для команд красиво
+        if (Step.PLAYER_SELECTION_TRIGGERS.contains(selectedStep)) {
+
+            var newMessage = playersSelector.createMessage(chatId, message, );
+
+        } else {
+
+            var nextStep = Step.getNextStep(Step.fromConsoleCommand(message).getConsoleCommand());
+            var keyboard = Utils.createKeyBoard(nextStep);
+            userCurrentStep.put(chatId, selectedStep);
+            sendMessage(chatId, keyboard, selectedStep);
+
+        }
+
 
     }
 
@@ -87,72 +110,17 @@ public class FootballBot extends TelegramLongPollingBot {
 
     }
 
-    //TODO доработать метод, возможно будут сложности с набором команды из игроков
-    //TODO вынести в отдельный класс(через интерфейс) для создания клавиатур и элементов интерфейса чата
-    private InlineKeyboardMarkup createKeyBoard(List<Step> steps) {
-        var markupInline = new InlineKeyboardMarkup();
-        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
-
-        /*
-         По информации из интернета не больше 8 кнопок в ряд и не более 100 в сумме
-         Примем за константу 4 кнопки в ряду и не более 25 рядов.
-         Учитывая, что редко играет 4 команды по 5 человек, то с запасом в сценарии с выбором игроков
-         */
-
-        var numberOfRows = Utils.defineNumberOfRows(steps.size());
-
-        int count = 0;
-        for (int i = 0; i < numberOfRows; i++) {
-
-            List<InlineKeyboardButton> tempButtonRow = new ArrayList<>();
-
-
-            for (int j = 0; j < Utils.ELEMENTS_IN_A_ROW; j++) {
-                if (count < steps.size()) {
-
-                    var tempStep = steps.get(count);
-
-                    var tempButton = new InlineKeyboardButton();
-                    tempButton.setText(tempStep.getDescription());
-                    tempButton.setCallbackData(tempStep.getConsoleCommand());
-                    tempButtonRow.add(tempButton);
-
-                    count++;
-                } else {
-                    // Важно: выход из внутреннего цикла, если элементы закончились
-                    break;
-                }
-            }
-            rowsInline.add(tempButtonRow);
-        }
-
-        markupInline.setKeyboard(rowsInline);
-
-        return markupInline;
-    }
-
 
     @Override
     public String getBotUsername() {
         return "kononikhin_footballbot";
     }
 
-    private void sendMessage(Long chatId, String text) {
-        var chatIdStr = String.valueOf(chatId);
-        var sendMessage = new SendMessage(chatIdStr, text);
-        try {
-            execute(sendMessage);
-        } catch (TelegramApiException e) {
-            log.error("Ошибка отправки сообщения", e);
-        }
-    }
-
-    private void sendMessage(Long chatId, InlineKeyboardMarkup keyboard) {
+    private void sendMessage(Long chatId, InlineKeyboardMarkup keyboard, Step selectedStep) {
         SendMessage message = new SendMessage();
         message.setChatId(chatId);
         message.setReplyMarkup(keyboard);
-        //TODO добавить описание этапа
-        message.setText("->>>>>>>>>>>>>>>> Скоро тут будет описание этапа <<<<<<<<<<<<<<<<-");
+        message.setText(selectedStep.getStepDescription());
         try {
             execute(message);
         } catch (TelegramApiException e) {
