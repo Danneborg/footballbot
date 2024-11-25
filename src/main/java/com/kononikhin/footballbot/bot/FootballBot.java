@@ -1,6 +1,8 @@
 package com.kononikhin.footballbot.bot;
 
 import com.kononikhin.footballbot.bot.constants.Step;
+import com.kononikhin.footballbot.bot.teamInfo.GameDayData;
+import com.kononikhin.footballbot.bot.teamInfo.PlayersSelector;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -8,18 +10,20 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 
 @Component
 @Slf4j
 public class FootballBot extends TelegramLongPollingBot {
+
+    //TODO перенести игроков(ники из тг) в БД
+    private final static Set<String> ALL_PLAYERS = Set.of("Player1", "Player2", "Player3", "Player4", "Player5", "Player6", "Player7", "Player8", "Player9", "Player10", "Player11", "Player12", "Player13", "Player14", "Player15", "Player16", "Player17", "Player18", "Player19", "Player20", "Player21", "Player22", "Player23");
 
     private final PlayersSelector playersSelector = new PlayersSelector();
 
@@ -62,21 +66,21 @@ public class FootballBot extends TelegramLongPollingBot {
          * */
 
         Long chatId;
-        String message;
+        String incomingMessage;
 
         if (update.hasMessage() && update.getMessage().hasText()) {
 
             chatId = update.getMessage().getChatId();
-            message = update.getMessage().getText();
+            incomingMessage = update.getMessage().getText();
 
         } else if (update.hasCallbackQuery()) {
 
             chatId = update.getCallbackQuery().getMessage().getChatId();
-            message = update.getCallbackQuery().getData();
+            incomingMessage = update.getCallbackQuery().getData();
 
         } else {
             chatId = 0L;
-            message = Step.UNKNOWN.getConsoleCommand();
+            incomingMessage = Step.UNKNOWN.getConsoleCommand();
         }
 
         //TODO протестировать момент когда пользак выбирает команду из нескольких доступных и что переходы между ними осуществляются корректно
@@ -84,16 +88,20 @@ public class FootballBot extends TelegramLongPollingBot {
         //TODO обработать вариант, когда вернулся UNKNOWN и нужно вернуть пользака на предыдущий шаг
         //TODO отработать вариант проверки, что человек не ввел руками неверный следующий шаг, допустим после START нельзя сразу выбирать составы
         var previousUserStep = userCurrentStep.computeIfAbsent(chatId, s -> Step.START);
-        var selectedStep = Step.fromConsoleCommand(message);
+        var selectedStep = Step.fromConsoleCommand(incomingMessage);
 
         //Сейчас будут костыли, но пока не знаю как вынести весь подпроцесс выбора игроков для команд красиво
         if (Step.PLAYER_SELECTION_TRIGGERS.contains(selectedStep)) {
 
-            var newMessage = playersSelector.createMessage(chatId, message, );
+            var tempGameData = userRosters.computeIfAbsent(chatId, s -> new GameDayData());
+
+            var newMessage = playersSelector.createMessage(chatId, incomingMessage, tempGameData, selectedStep, ALL_PLAYERS, userCurrentStep);
+
+            sendMessage(newMessage);
 
         } else {
 
-            var nextStep = Step.getNextStep(Step.fromConsoleCommand(message).getConsoleCommand());
+            var nextStep = Step.getNextStep(Step.fromConsoleCommand(incomingMessage).getConsoleCommand());
             var keyboard = Utils.createKeyBoard(nextStep);
             userCurrentStep.put(chatId, selectedStep);
             sendMessage(chatId, keyboard, selectedStep);
@@ -114,6 +122,14 @@ public class FootballBot extends TelegramLongPollingBot {
     @Override
     public String getBotUsername() {
         return "kononikhin_footballbot";
+    }
+
+    private void sendMessage(SendMessage messageToSend) {
+        try {
+            execute(messageToSend);
+        } catch (TelegramApiException e) {
+            log.error("Ошибка отправки сообщения", e);
+        }
     }
 
     private void sendMessage(Long chatId, InlineKeyboardMarkup keyboard, Step selectedStep) {

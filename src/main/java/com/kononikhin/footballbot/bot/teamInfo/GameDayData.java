@@ -1,4 +1,4 @@
-package com.kononikhin.footballbot.bot;
+package com.kononikhin.footballbot.bot.teamInfo;
 
 import com.kononikhin.footballbot.bot.constants.Step;
 import lombok.Getter;
@@ -12,8 +12,12 @@ import java.util.concurrent.ConcurrentHashMap;
 //TODO покрыть тестами функционал методов
 public class GameDayData {
 
+    public final static int ROSTER_SIZE = 5;
+
     @Getter
     private final Set<String> selectedPlayers = new HashSet<>();
+    @Getter
+    //TODO переписать код, не нужны gameDayRosters и fullRosters, все вычисления можно сделать через rostersWithPlayers
     private final Map<Step, Set<String>> rostersWithPlayers = new ConcurrentHashMap<>();
     private final Set<Step> gameDayRosters = new HashSet<>();
     private final Set<Step> fullRosters = new HashSet<>();
@@ -29,12 +33,12 @@ public class GameDayData {
 
         }
 
-        return rostersWithPlayers.get(roster).size() == 5;
+        return rostersWithPlayers.get(roster).size() == ROSTER_SIZE;
 
     }
 
     public Set<Step> getNotFullRosters() {
-        Set<Step> difference = new HashSet<>(gameDayRosters); // Создаем копию
+        Set<Step> difference = new HashSet<>(Step.listOfRosters()); // Создаем копию
         difference.removeAll(fullRosters);
         return difference;
     }
@@ -50,7 +54,7 @@ public class GameDayData {
 
     public void addPlayerToRoster(Step roster, String playerName) {
         rostersWithPlayers.get(roster).add(playerName);
-        selectedPlayers.add(playerName);
+        addPlayerToSelectedPlayers(playerName);
     }
 
     public void addPlayerToSelectedPlayers(String player) {
@@ -63,7 +67,15 @@ public class GameDayData {
         return difference;
     }
 
-    public boolean areAllRostersFull(){
+    public boolean areAllRostersFull() {
         return fullRosters.size() == gameDayRosters.size();
+    }
+
+    public int getRosterSize(Step roster) {
+        return rostersWithPlayers.get(roster).size();
+    }
+
+    public Set<String> getRosterWithPlayers(Step roster) {
+        return rostersWithPlayers.get(roster);
     }
 }

@@ -18,12 +18,14 @@ public enum Step {
     //TODO добавить длинное описалово того, что может делать бот
     SHOW_HELP("/show_help", "Помощь", ""),
     UNKNOWN("unknown", "Неизвестный шаг", "Шаг неизвестен, отправляю тебя на предыдущее действие..."),
+    //Очень хитрый шаг, нужно передавать команду на выбор игроков из списка и одновременно в callBackData передать имя выбранного игрока
+    //TODO нужно перетащить информацию о ростерах в отдельный энам, попробовать без дублирования информации
     SELECT_RED_ROSTER("/select_red_roster", "Красные", "Выбери игроков для Красной команды"),
     SELECT_GREEN_ROSTER("/select_green_roster", "Зеленые", "Выбери игроков для Зеленой команды"),
     SELECT_BLUE_ROSTER("/select_blue_roster", "Синие", "Выбери игроков для Синей команды"),
     SELECT_NAKED_ROSTER("/select_naked_roster", "Голые", "Выбери игроков для Раздетой команды"),
     //Очень хитрый шаг, нужно передавать команду на выбор игроков из списка и одновременно в callBackData передать имя выбранного игрока
-    SELECT_PLAYER("/select_player", "Выбери игрока", "Выбери игрока для команды %s из списка : "),
+//    SELECT_PLAYER("/select_player", "Выбери игрока", "Выбери игрока для команды %s из списка : "),
     ;
 
     private final String consoleCommand;
@@ -35,7 +37,7 @@ public enum Step {
     private static final List<Step> BUTTON_START_LIST = List.of(START_GAME_DAY, GET_COMMON_STAT, SHOW_HELP);
     private static final List<Step> ROSTERS = List.of(SELECT_RED_ROSTER, SELECT_GREEN_ROSTER, SELECT_BLUE_ROSTER, SELECT_NAKED_ROSTER);
     private static final Map<String, Step> commandMap = new HashMap<>();
-    public static final List<Step> PLAYER_SELECTION_TRIGGERS = List.of(SELECT_RED_ROSTER, SELECT_GREEN_ROSTER, SELECT_BLUE_ROSTER, SELECT_NAKED_ROSTER, SELECT_PLAYER);
+    public static final List<Step> PLAYER_SELECTION_TRIGGERS = List.of(SELECT_RED_ROSTER, SELECT_GREEN_ROSTER, SELECT_BLUE_ROSTER, SELECT_NAKED_ROSTER);
 
     static {
         for (Step step : Step.values()) {
@@ -57,7 +59,7 @@ public enum Step {
                 return ROSTERS;
             }
             case SELECT_RED_ROSTER, SELECT_GREEN_ROSTER, SELECT_BLUE_ROSTER, SELECT_NAKED_ROSTER -> {
-                return List.of(SELECT_PLAYER);
+                return List.of(step);
             }
 
             default -> {
@@ -70,10 +72,17 @@ public enum Step {
 
     public static Step fromConsoleCommand(String command) {
 
-        if (command.startsWith(SELECT_PLAYER.getConsoleCommand())) {
-            command = command.split(SELECT_PLAYER.getConsoleCommand())[0];
+        if (command.startsWith(SELECT_RED_ROSTER.getConsoleCommand())
+                || command.startsWith(SELECT_GREEN_ROSTER.getConsoleCommand())
+                || command.startsWith(SELECT_BLUE_ROSTER.getConsoleCommand())
+                || command.startsWith(SELECT_NAKED_ROSTER.getConsoleCommand())) {
+            command = command.split(":")[0];
         }
 
         return commandMap.getOrDefault(command, UNKNOWN);
+    }
+
+    public static List<Step> listOfRosters(){
+        return ROSTERS;
     }
 }

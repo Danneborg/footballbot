@@ -1,5 +1,6 @@
 package com.kononikhin.footballbot.bot;
 
+import com.kononikhin.footballbot.bot.constants.RosterType;
 import com.kononikhin.footballbot.bot.constants.Step;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
