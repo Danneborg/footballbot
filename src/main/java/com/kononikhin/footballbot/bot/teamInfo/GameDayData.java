@@ -1,81 +1,117 @@
 package com.kononikhin.footballbot.bot.teamInfo;
 
+import com.kononikhin.footballbot.bot.constants.RosterType;
 import com.kononikhin.footballbot.bot.constants.Step;
 import lombok.Getter;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 //TODO для разных пользователей должен быть свой объект
 //TODO покрыть тестами функционал методов
 public class GameDayData {
 
-    public final static int ROSTER_SIZE = 5;
+    @Getter
+    public static int ROSTER_SIZE = 5;
 
     @Getter
-    private final Set<String> selectedPlayers = new HashSet<>();
-    @Getter
-    //TODO переписать код, не нужны gameDayRosters и fullRosters, все вычисления можно сделать через rostersWithPlayers
-    private final Map<Step, Set<String>> rostersWithPlayers = new ConcurrentHashMap<>();
-    private final Set<Step> gameDayRosters = new HashSet<>();
-    private final Set<Step> fullRosters = new HashSet<>();
+    private final Map<RosterType, Roster> rostersWithPlayers = new ConcurrentHashMap<>();
 
-    public boolean isRosterSet(Step roster) {
+    public boolean isRosterSet(RosterType roster) {
         return rostersWithPlayers.containsKey(roster);
     }
 
-    public boolean isRosterFull(Step roster) {
+    public boolean isRosterFull(RosterType rosterType) {
 
         //TODO бросить ошибку и обработать эту ситуацию с возвратом к предыдущему шагу
-        if (!rostersWithPlayers.containsKey(roster)) {
+        if (!rostersWithPlayers.containsKey(rosterType)) {
 
         }
 
-        return rostersWithPlayers.get(roster).size() == ROSTER_SIZE;
+        return rostersWithPlayers.get(rosterType).isRosterFull();
 
     }
 
-    public Set<Step> getNotFullRosters() {
-        Set<Step> difference = new HashSet<>(Step.listOfRosters()); // Создаем копию
-        difference.removeAll(fullRosters);
-        return difference;
+    //TODO должны быть виды типы шагов
+    //TODO переименовать
+    public List<Step> getAllRostersTypes() {
+
+        var fullRosters = rostersWithPlayers.entrySet().stream()
+                .filter(e -> e.getValue().isRosterFull())
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+
+        var tempAllRosters = RosterType.getALL_ROSTERS();
+        tempAllRosters.removeAll(fullRosters);
+
+        return tempAllRosters.stream()
+                .map(RosterType::getStepFromRosterType)
+                .collect(Collectors.toList());
     }
 
-    public void addRosterToFull(Step roster) {
-        fullRosters.add(roster);
+    public List<Step> getNotFullRosters() {
+
+        var fullRosters = rostersWithPlayers.entrySet().stream()
+                .filter(e -> e.getValue().isRosterFull())
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+
+        var tempAllRosters = RosterType.getALL_ROSTERS();
+        tempAllRosters.removeAll(fullRosters);
+
+        return tempAllRosters.stream()
+                .map(RosterType::getStepFromRosterType)
+                .collect(Collectors.toList());
     }
 
-    public void setRoster(Step roster) {
-        rostersWithPlayers.put(roster, new HashSet<>());
-        gameDayRosters.add(roster);
+    public void setRoster(RosterType rosterType) {
+        rostersWithPlayers.computeIfAbsent(rosterType, e -> new Roster(rosterType));
     }
 
-    public void addPlayerToRoster(Step roster, String playerName) {
-        rostersWithPlayers.get(roster).add(playerName);
-        addPlayerToSelectedPlayers(playerName);
-    }
-
-    public void addPlayerToSelectedPlayers(String player) {
-        selectedPlayers.add(player);
+    public void addPlayerToRoster(RosterType rosterType, String playerName) {
+        rostersWithPlayers.get(rosterType).addPlayer(playerName);
     }
 
     public Set<String> getNotSelectedPlayers(Set<String> allPlayers) {
-        Set<String> difference = new HashSet<>(allPlayers); // Создаем копию
+        var difference = new HashSet<>(allPlayers);
+        var selectedPlayers = rostersWithPlayers.values().stream()
+                .flatMap(e -> e.getSelectedPlayers().stream())
+                .collect(Collectors.toSet());
+
         difference.removeAll(selectedPlayers);
         return difference;
     }
 
-    public boolean areAllRostersFull() {
-        return fullRosters.size() == gameDayRosters.size();
+    public long getNumberOfFullRosters() {
+        return rostersWithPlayers.values().stream()
+                .filter(Roster::isRosterFull)
+                .count();
     }
 
-    public int getRosterSize(Step roster) {
-        return rostersWithPlayers.get(roster).size();
+    public boolean isGameDayReadyToStart(int minimumFullRostersToPlay) {
+
+        var fullRosters = getNumberOfFullRosters();
+
+        return fullRosters >= minimumFullRostersToPlay && areAllRostersFull();
+
     }
 
-    public Set<String> getRosterWithPlayers(Step roster) {
-        return rostersWithPlayers.get(roster);
+    private boolean areAllRostersFull() {
+
+        return rostersWithPlayers.values().stream()
+                .allMatch(Roster::isRosterFull);
+
+    }
+
+    public int getRosterSize(RosterType rosterType) {
+        return rostersWithPlayers.get(rosterType).getSelectedPlayers().size();
+    }
+
+    public Set<String> getRosterWithPlayers(RosterType rosterType) {
+        return rostersWithPlayers.get(rosterType).getSelectedPlayers();
     }
 }

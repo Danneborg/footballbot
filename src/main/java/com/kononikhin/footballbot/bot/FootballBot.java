@@ -2,8 +2,10 @@ package com.kononikhin.footballbot.bot;
 
 import com.kononikhin.footballbot.bot.constants.Step;
 import com.kononikhin.footballbot.bot.teamInfo.GameDayData;
+import com.kononikhin.footballbot.bot.teamInfo.GameResultSelector;
 import com.kononikhin.footballbot.bot.teamInfo.PlayersSelector;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -20,12 +22,16 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 @Slf4j
+
 public class FootballBot extends TelegramLongPollingBot {
 
     //TODO перенести игроков(ники из тг) в БД
     private final static Set<String> ALL_PLAYERS = Set.of("Player1", "Player2", "Player3", "Player4", "Player5", "Player6", "Player7", "Player8", "Player9", "Player10", "Player11", "Player12", "Player13", "Player14", "Player15", "Player16", "Player17", "Player18", "Player19", "Player20", "Player21", "Player22", "Player23");
 
-    private final PlayersSelector playersSelector = new PlayersSelector();
+    @Autowired
+    private GameResultSelector gameResultSelector;
+    @Autowired
+    private PlayersSelector playersSelector;
 
     /**
      * TODO переместить это в БД
@@ -97,6 +103,13 @@ public class FootballBot extends TelegramLongPollingBot {
 
             var newMessage = playersSelector.createMessage(chatId, incomingMessage, tempGameData, selectedStep, ALL_PLAYERS, userCurrentStep);
 
+            sendMessage(newMessage);
+
+        } else if (Step.TO_RESULT_SETTING.equals(selectedStep)) {
+
+            var tempGameData = userRosters.computeIfAbsent(chatId, s -> new GameDayData());
+
+            var newMessage = gameResultSelector.setGameResult(chatId, incomingMessage, tempGameData, selectedStep, userCurrentStep);
             sendMessage(newMessage);
 
         } else {

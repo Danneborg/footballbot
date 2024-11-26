@@ -19,13 +19,13 @@ public enum Step {
     SHOW_HELP("/show_help", "Помощь", ""),
     UNKNOWN("unknown", "Неизвестный шаг", "Шаг неизвестен, отправляю тебя на предыдущее действие..."),
     //Очень хитрый шаг, нужно передавать команду на выбор игроков из списка и одновременно в callBackData передать имя выбранного игрока
-    //TODO нужно перетащить информацию о ростерах в отдельный энам, попробовать без дублирования информации
     SELECT_RED_ROSTER("/select_red_roster", "Красные", "Выбери игроков для Красной команды"),
     SELECT_GREEN_ROSTER("/select_green_roster", "Зеленые", "Выбери игроков для Зеленой команды"),
     SELECT_BLUE_ROSTER("/select_blue_roster", "Синие", "Выбери игроков для Синей команды"),
     SELECT_NAKED_ROSTER("/select_naked_roster", "Голые", "Выбери игроков для Раздетой команды"),
-    //Очень хитрый шаг, нужно передавать команду на выбор игроков из списка и одновременно в callBackData передать имя выбранного игрока
-//    SELECT_PLAYER("/select_player", "Выбери игрока", "Выбери игрока для команды %s из списка : "),
+    TO_RESULT_SETTING("/to_result_setting", "Перейти к внесению результатов игр", "Отлично! Все составы набраны, можно вносить результаты игр!"),
+    SET_A_SINGLE_RESULT("/set_a_single_result", "Внести результат", "Внеси результат игры или закончи игровой день."),
+    FINISH_A_GAME_DAY("/finish_a_game_day", "Завершить игровой день.", "Отлично поиграли сегодня! Завершить игровой день и отправить статистику в чат."),
     ;
 
     private final String consoleCommand;
@@ -60,6 +60,10 @@ public enum Step {
             }
             case SELECT_RED_ROSTER, SELECT_GREEN_ROSTER, SELECT_BLUE_ROSTER, SELECT_NAKED_ROSTER -> {
                 return List.of(step);
+            }
+
+            case TO_RESULT_SETTING -> {
+                return List.of(SET_A_SINGLE_RESULT);
             }
 
             default -> {

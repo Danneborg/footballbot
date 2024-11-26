@@ -3,6 +3,8 @@ package com.kononikhin.footballbot.bot.teamInfo;
 import com.kononikhin.footballbot.bot.Utils;
 import com.kononikhin.footballbot.bot.constants.RosterType;
 import com.kononikhin.footballbot.bot.constants.Step;
+import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -12,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+@Component
 public class PlayersSelector {
 
     //TODO добавить проверку на заполнение минимального количества команд для игры
@@ -22,10 +25,12 @@ public class PlayersSelector {
         SendMessage messageToSend = new SendMessage();
         messageToSend.setChatId(chatId);
 
-        var isTempRosterSet = gameDayData.isRosterSet(rosterToFill);
+        var rosterType = RosterType.getRosterTypeFromStep(rosterToFill);
+
+        var isTempRosterSet = gameDayData.isRosterSet(rosterType);
 
         if (!isTempRosterSet) {
-            gameDayData.setRoster(rosterToFill);
+            gameDayData.setRoster(rosterType);
         }
 
         //TODO добавить проверки на элемент того, что команда полная и все выбранные команды заполнены
@@ -34,26 +39,40 @@ public class PlayersSelector {
         //Если нет 2ого параметра в виде имени игрока, значит пользак нажал на кнопку первый раз
         if (params.length > 1) {
             var playerName = params[1];
-            gameDayData.addPlayerToRoster(rosterToFill, playerName);
+            gameDayData.addPlayerToRoster(rosterType, playerName);
         }
 
-        var isTempRosterToFillFull = gameDayData.isRosterFull(rosterToFill);
+        var isTempRosterToFillFull = gameDayData.isRosterFull(rosterType);
 
         if (isTempRosterToFillFull) {
 
             //TODO прописать этот шаг
             //TODO добавить проверку, что набрано минимальное количество полных команд для игры и добавить кнопку перехода в процесс записи результатов
-            if (gameDayData.areAllRostersFull()) {
+            //TODO нужно обработать ситуацию когда не хватает игроков в одной команде и добавить возможность начать в неполных составах
+            if (gameDayData.isGameDayReadyToStart(MINIMUM_ROSTERS_TO_PLAY)) {
+                messageToSend.setParseMode(ParseMode.HTML);
+
+                var listOfSteps = gameDayData.getNotFullRosters();
+                listOfSteps.add(Step.TO_RESULT_SETTING);
+                var keyboard = Utils.createKeyBoard(listOfSteps);
+                messageToSend.setReplyMarkup(keyboard);
+
+                messageToSend.setText(String.format("Состав для <b>%s</b> готов. Набрано полных команд <b>%s.</b>\n" +
+                                "<i>Можно начинать играть или набрать еще 1 команду.</i>",
+                        rosterToFill.getButtonText(), gameDayData.getNumberOfFullRosters()));
+
+                userCurrentStep.put(chatId, rosterToFill);
+
+            } else {
+
+                var keyboard = Utils.createKeyBoard(gameDayData.getNotFullRosters());
+                messageToSend.setReplyMarkup(keyboard);
+                messageToSend.setText(String.format("Состав для %s готов, выбери следующую команду :", rosterToFill.getButtonText()));
+                //TODO подумать над тем как обновлять текущий шаг когда идет выбор игроков в команды, в этот момент предыдущий шаг равен следующему,
+                // возможно, нужно обработать эту ситуацию в альтернативной ветке
+                userCurrentStep.put(chatId, rosterToFill);
 
             }
-
-            gameDayData.addRosterToFull(rosterToFill);
-            var keyboard = Utils.createKeyBoard(gameDayData.getNotFullRosters().stream().toList());
-            messageToSend.setReplyMarkup(keyboard);
-            messageToSend.setText(String.format("Состав для %s готов, выбери следующую команду :", rosterToFill.getButtonText()));
-            //TODO подумать над тем как обновлять текущий шаг когда идет выбор игроков в команды, в этот момент предыдущий шаг равен следующему,
-            // возможно, нужно обработать эту ситуацию в альтернативной ветке
-            userCurrentStep.put(chatId, rosterToFill);
 
 
         } else {
@@ -61,7 +80,7 @@ public class PlayersSelector {
             var playersToSelect = gameDayData.getNotSelectedPlayers(allPlayers);
             var keyboard = createKeyBoard(new ArrayList<>(playersToSelect), rosterToFill);
             messageToSend.setReplyMarkup(keyboard);
-            messageToSend.setText(String.format("Для команды %s осталось выбрать %s игроков", rosterToFill.getButtonText(), GameDayData.ROSTER_SIZE - gameDayData.getRosterSize(rosterToFill)));
+            messageToSend.setText(String.format("Для команды %s осталось выбрать %s игроков", rosterToFill.getButtonText(), GameDayData.ROSTER_SIZE - gameDayData.getRosterSize(rosterType)));
 
         }
 

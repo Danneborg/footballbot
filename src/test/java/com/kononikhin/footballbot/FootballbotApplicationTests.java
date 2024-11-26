@@ -2,6 +2,7 @@ package com.kononikhin.footballbot;
 
 
 import com.kononikhin.footballbot.bot.Utils;
+import com.kononikhin.footballbot.bot.constants.RosterType;
 import com.kononikhin.footballbot.bot.constants.Step;
 import com.kononikhin.footballbot.bot.teamInfo.GameDayData;
 import com.kononikhin.footballbot.bot.teamInfo.PlayersSelector;
@@ -41,19 +42,20 @@ public class FootballbotApplicationTests {
 
         var incomingMessage = Step.SELECT_RED_ROSTER.getConsoleCommand();
         var roster = Step.SELECT_RED_ROSTER;
+        var rosterType = RosterType.getRosterTypeFromStep(roster);
 
         var newMessage = playersSelector.createMessage(chatId, incomingMessage, gameData, roster, ALL_PLAYERS, userCurrentStep);
 
         assert newMessage != null;
         //TODO проверить содержимое newMessage
 
-        var newMessageAfterAddingPlayer = playersSelector.createMessage(chatId, incomingMessage+":Player1", gameData, roster, ALL_PLAYERS, userCurrentStep);
+        var newMessageAfterAddingPlayer = playersSelector.createMessage(chatId, incomingMessage + ":Player1", gameData, roster, ALL_PLAYERS, userCurrentStep);
 
         //Добавили 1 игрока в команду
-        assert gameData.getRosterSize(roster) == 1;
+        assert gameData.getRosterSize(rosterType) == 1;
         //В доступном списке на 1 игрока меньше
         assert gameData.getNotSelectedPlayers(ALL_PLAYERS).size() == ALL_PLAYERS.size() - 1;
-        assert gameData.getRosterWithPlayers(roster).size() == 1;
+        assert gameData.getRosterWithPlayers(rosterType).size() == 1;
 
     }
 
