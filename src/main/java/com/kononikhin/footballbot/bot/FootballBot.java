@@ -92,7 +92,7 @@ public class FootballBot extends TelegramLongPollingBot {
         //TODO протестировать момент когда пользак выбирает команду из нескольких доступных и что переходы между ними осуществляются корректно
         //TODO отправить сообщение, что такой команды/шага нет, и вернуть на предыдущий/стартовый шаг
         //TODO обработать вариант, когда вернулся UNKNOWN и нужно вернуть пользака на предыдущий шаг
-        //TODO отработать вариант проверки, что человек не ввел руками неверный следующий шаг, допустим после START нельзя сразу выбирать составы
+        //TODO отработать вариант проверки, что человек не ввел руками неверный следующий шаг, допустим после START нельзя сразу выбирать составы, необходим анализ предыдущего шага
         var previousUserStep = userCurrentStep.computeIfAbsent(chatId, s -> Step.START);
         var selectedStep = Step.fromConsoleCommand(incomingMessage);
 
@@ -107,16 +107,26 @@ public class FootballBot extends TelegramLongPollingBot {
 
         } else if (Step.TO_RESULT_SETTING.equals(selectedStep)) {
 
+            //TODO добавить ошибку если руками была введена команда без набранных ростеров
             var tempGameData = userRosters.computeIfAbsent(chatId, s -> new GameDayData());
+            var newMessage = gameResultSelector.initiateSettingResults(chatId, tempGameData, selectedStep, userCurrentStep);
+            sendMessage(newMessage);
 
+        } else if (Step.GAME_RESULT_SET_TRIGGERS.contains(selectedStep)) {
+
+            //TODO добавить ошибку если руками была введена команда без набранных ростеров
+            var tempGameData = userRosters.computeIfAbsent(chatId, s -> new GameDayData());
             var newMessage = gameResultSelector.setGameResult(chatId, incomingMessage, tempGameData, selectedStep, userCurrentStep);
             sendMessage(newMessage);
 
         } else {
 
             var nextStep = Step.getNextStep(Step.fromConsoleCommand(incomingMessage).getConsoleCommand());
+
             var keyboard = Utils.createKeyBoard(nextStep);
+
             userCurrentStep.put(chatId, selectedStep);
+
             sendMessage(chatId, keyboard, selectedStep);
 
         }

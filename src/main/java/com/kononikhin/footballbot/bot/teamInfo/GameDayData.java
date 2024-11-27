@@ -3,17 +3,18 @@ package com.kononikhin.footballbot.bot.teamInfo;
 import com.kononikhin.footballbot.bot.constants.RosterType;
 import com.kononikhin.footballbot.bot.constants.Step;
 import lombok.Getter;
+import org.springframework.util.CollectionUtils;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 //TODO для разных пользователей должен быть свой объект
 //TODO покрыть тестами функционал методов
 public class GameDayData {
+
+    @Getter
+    private final List<GameResult> gameResults = new ArrayList<>();
 
     @Getter
     public static int ROSTER_SIZE = 5;
@@ -36,20 +37,25 @@ public class GameDayData {
 
     }
 
-    //TODO должны быть виды типы шагов
-    //TODO переименовать
-    public List<Step> getAllRostersTypes() {
+    public GameResult getLastGameResult() {
 
-        var fullRosters = rostersWithPlayers.entrySet().stream()
-                .filter(e -> e.getValue().isRosterFull())
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toSet());
+        if(CollectionUtils.isEmpty(gameResults)) {
+            gameResults.add(new GameResult());
+        }
 
-        var tempAllRosters = RosterType.getALL_ROSTERS();
-        tempAllRosters.removeAll(fullRosters);
+        return gameResults.get(gameResults.size() - 1);
+    }
 
-        return tempAllRosters.stream()
-                .map(RosterType::getStepFromRosterType)
+    public boolean moreAtLeastOneFinishedGame() {
+        return gameResults.stream()
+                .map(GameResult::isGameFinished)
+                .filter(Boolean::booleanValue)
+                .findFirst().orElse(false);
+    }
+
+    public List<Step> getStepsForSetResult() {
+        return rostersWithPlayers.keySet().stream()
+                .map(RosterType::getStepForSetGameResult)
                 .collect(Collectors.toList());
     }
 
