@@ -21,7 +21,7 @@ public class Roster {
     public void addPlayer(String playerName) {
         selectedPlayers.add(playerName);
 
-        if (selectedPlayers.size() == GameDayData.ROSTER_SIZE) {
+        if (selectedPlayers.size() == GameSessionData.ROSTER_SIZE) {
             isRosterFull = true;
         }
 

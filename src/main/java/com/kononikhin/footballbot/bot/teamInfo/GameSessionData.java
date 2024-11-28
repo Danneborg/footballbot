@@ -11,12 +11,13 @@ import java.util.stream.Collectors;
 
 //TODO для разных пользователей должен быть свой объект
 //TODO покрыть тестами функционал методов
-public class GameDayData {
+public class GameSessionData {
 
     @Getter
     private final List<GameResult> gameResults = new ArrayList<>();
 
     @Getter
+    //TODO продумать механизм задания количества игроков в команде через действия пользователя
     public static int ROSTER_SIZE = 5;
 
     @Getter
@@ -37,10 +38,15 @@ public class GameDayData {
 
     }
 
+    //TODO протестировать механизм добавления новой свежей игры
     public GameResult getLastGameResult() {
 
-        if(CollectionUtils.isEmpty(gameResults)) {
+        if (CollectionUtils.isEmpty(gameResults)) {
             gameResults.add(new GameResult());
+        } else {
+            if (gameResults.get(gameResults.size() - 1).isGameFinished()) {
+                gameResults.add(new GameResult());
+            }
         }
 
         return gameResults.get(gameResults.size() - 1);
@@ -117,7 +123,7 @@ public class GameDayData {
         return rostersWithPlayers.get(rosterType).getSelectedPlayers().size();
     }
 
-    public Set<String> getRosterWithPlayers(RosterType rosterType) {
-        return rostersWithPlayers.get(rosterType).getSelectedPlayers();
+    public Set<String> getRosterPlayers(RosterType rosterType) {
+        return new HashSet<>(rostersWithPlayers.get(rosterType).getSelectedPlayers());
     }
 }

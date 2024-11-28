@@ -6,6 +6,11 @@ import lombok.Setter;
 @Getter
 @Setter
 public class SingleGoal {
+
+    public boolean isBombardierSet = false;
+    public boolean isAssistantSet = false;
+    public boolean goalComplete = false;
+
     private String bombardier;
-    private String assistMan;
+    private String assistant;
 }

@@ -4,7 +4,7 @@ package com.kononikhin.footballbot;
 import com.kononikhin.footballbot.bot.Utils;
 import com.kononikhin.footballbot.bot.constants.RosterType;
 import com.kononikhin.footballbot.bot.constants.Step;
-import com.kononikhin.footballbot.bot.teamInfo.GameDayData;
+import com.kononikhin.footballbot.bot.teamInfo.GameSessionData;
 import com.kononikhin.footballbot.bot.teamInfo.PlayersSelector;
 import org.junit.Test;
 
@@ -36,7 +36,7 @@ public class FootballbotApplicationTests {
     public void testAddNewRoster() {
 
         Long chatId = 1L;
-        var gameData = new GameDayData();
+        var gameData = new GameSessionData();
         var playersSelector = new PlayersSelector();
         Map<Long, Step> userCurrentStep = new HashMap<>();
 
@@ -55,7 +55,7 @@ public class FootballbotApplicationTests {
         assert gameData.getRosterSize(rosterType) == 1;
         //В доступном списке на 1 игрока меньше
         assert gameData.getNotSelectedPlayers(ALL_PLAYERS).size() == ALL_PLAYERS.size() - 1;
-        assert gameData.getRosterWithPlayers(rosterType).size() == 1;
+        assert gameData.getRosterPlayers(rosterType).size() == 1;
 
     }
 

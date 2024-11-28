@@ -19,17 +19,17 @@ public class PlayersSelector {
 
     private final static int MINIMUM_ROSTERS_TO_PLAY = 2;
 
-    public SendMessage createMessage(Long chatId, String incomingMessage, GameDayData gameDayData,
+    public SendMessage createMessage(Long chatId, String incomingMessage, GameSessionData gameSessionData,
                                      Step rosterToFill, Set<String> allPlayers, Map<Long, Step> userCurrentStep) {
         SendMessage messageToSend = new SendMessage();
         messageToSend.setChatId(chatId);
 
         var rosterType = RosterType.getRosterTypeFromStep(rosterToFill);
 
-        var isTempRosterSet = gameDayData.isRosterSet(rosterType);
+        var isTempRosterSet = gameSessionData.isRosterSet(rosterType);
 
         if (!isTempRosterSet) {
-            gameDayData.setRoster(rosterType);
+            gameSessionData.setRoster(rosterType);
         }
 
         var params = incomingMessage.split(":");
@@ -37,31 +37,31 @@ public class PlayersSelector {
         //Если нет 2ого параметра в виде имени игрока, значит пользак нажал на кнопку первый раз
         if (params.length > 1) {
             var playerName = params[1];
-            gameDayData.addPlayerToRoster(rosterType, playerName);
+            gameSessionData.addPlayerToRoster(rosterType, playerName);
         }
 
-        var isTempRosterToFillFull = gameDayData.isRosterFull(rosterType);
+        var isTempRosterToFillFull = gameSessionData.isRosterFull(rosterType);
 
         if (isTempRosterToFillFull) {
 
             //TODO нужно обработать ситуацию когда не хватает игроков в одной команде и добавить возможность начать в неполных составах
-            if (gameDayData.isGameDayReadyToStart(MINIMUM_ROSTERS_TO_PLAY)) {
+            if (gameSessionData.isGameDayReadyToStart(MINIMUM_ROSTERS_TO_PLAY)) {
                 messageToSend.setParseMode(ParseMode.HTML);
 
-                var listOfSteps = gameDayData.getNotFullRosters();
+                var listOfSteps = gameSessionData.getNotFullRosters();
                 listOfSteps.add(Step.TO_RESULT_SETTING);
                 var keyboard = Utils.createKeyBoard(listOfSteps);
                 messageToSend.setReplyMarkup(keyboard);
 
                 messageToSend.setText(String.format("Состав для <b>%s</b> готов. Набрано <b>%s</b> полных команд.\n" +
                                 "<i>Можно начинать играть или набрать еще 1 команду.</i>",
-                        rosterToFill.getButtonText(), gameDayData.getNumberOfFullRosters()));
+                        rosterToFill.getButtonText(), gameSessionData.getNumberOfFullRosters()));
 
                 userCurrentStep.put(chatId, rosterToFill);
 
             } else {
 
-                var keyboard = Utils.createKeyBoard(gameDayData.getNotFullRosters());
+                var keyboard = Utils.createKeyBoard(gameSessionData.getNotFullRosters());
                 messageToSend.setReplyMarkup(keyboard);
                 messageToSend.setText(String.format("Состав для %s готов, выбери следующую команду :", rosterToFill.getButtonText()));
                 userCurrentStep.put(chatId, rosterToFill);
@@ -71,10 +71,10 @@ public class PlayersSelector {
 
         } else {
 
-            var playersToSelect = gameDayData.getNotSelectedPlayers(allPlayers);
+            var playersToSelect = gameSessionData.getNotSelectedPlayers(allPlayers);
             var keyboard = createKeyBoard(new ArrayList<>(playersToSelect), rosterToFill);
             messageToSend.setReplyMarkup(keyboard);
-            messageToSend.setText(String.format("Для команды %s осталось выбрать %s игроков", rosterToFill.getButtonText(), GameDayData.ROSTER_SIZE - gameDayData.getRosterSize(rosterType)));
+            messageToSend.setText(String.format("Для команды %s осталось выбрать %s игроков", rosterToFill.getButtonText(), GameSessionData.ROSTER_SIZE - gameSessionData.getRosterSize(rosterType)));
 
         }
 
@@ -82,6 +82,7 @@ public class PlayersSelector {
         return messageToSend;
     }
 
+    //TODO Объединить эти методы с методами из GameResultSelector
     private InlineKeyboardMarkup createKeyBoard(List<String> players, Step rosterToFill) {
         var markupInline = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();

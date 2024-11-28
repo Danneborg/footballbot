@@ -1,7 +1,7 @@
 package com.kononikhin.footballbot.bot;
 
 import com.kononikhin.footballbot.bot.constants.Step;
-import com.kononikhin.footballbot.bot.teamInfo.GameDayData;
+import com.kononikhin.footballbot.bot.teamInfo.GameSessionData;
 import com.kononikhin.footballbot.bot.teamInfo.GameResultSelector;
 import com.kononikhin.footballbot.bot.teamInfo.PlayersSelector;
 import lombok.extern.slf4j.Slf4j;
@@ -43,7 +43,8 @@ public class FootballBot extends TelegramLongPollingBot {
      * TODO переместить это в БД
      * Один пользак может одновременно иметь только один игровой день
      */
-    private final Map<Long, GameDayData> userRosters = new ConcurrentHashMap<>();
+    //TODO Сделать преднаполнение для тестов, чтобы не проходить весь процесс каждый раз сначала, 2 команды по 5 игровов и следующий шаг - указание счета
+    private final Map<Long, GameSessionData> userRosters = new ConcurrentHashMap<>();
 
 
     public FootballBot(@Value("${bot.token}") String botToken) {
@@ -99,7 +100,7 @@ public class FootballBot extends TelegramLongPollingBot {
         //Сейчас будут костыли, но пока не знаю как вынести весь подпроцесс выбора игроков для команд красиво
         if (Step.PLAYER_SELECTION_TRIGGERS.contains(selectedStep)) {
 
-            var tempGameData = userRosters.computeIfAbsent(chatId, s -> new GameDayData());
+            var tempGameData = userRosters.computeIfAbsent(chatId, s -> new GameSessionData());
 
             var newMessage = playersSelector.createMessage(chatId, incomingMessage, tempGameData, selectedStep, ALL_PLAYERS, userCurrentStep);
 
@@ -108,14 +109,14 @@ public class FootballBot extends TelegramLongPollingBot {
         } else if (Step.TO_RESULT_SETTING.equals(selectedStep)) {
 
             //TODO добавить ошибку если руками была введена команда без набранных ростеров
-            var tempGameData = userRosters.computeIfAbsent(chatId, s -> new GameDayData());
+            var tempGameData = userRosters.computeIfAbsent(chatId, s -> new GameSessionData());
             var newMessage = gameResultSelector.initiateSettingResults(chatId, tempGameData, selectedStep, userCurrentStep);
             sendMessage(newMessage);
 
         } else if (Step.GAME_RESULT_SET_TRIGGERS.contains(selectedStep)) {
 
             //TODO добавить ошибку если руками была введена команда без набранных ростеров
-            var tempGameData = userRosters.computeIfAbsent(chatId, s -> new GameDayData());
+            var tempGameData = userRosters.computeIfAbsent(chatId, s -> new GameSessionData());
             var newMessage = gameResultSelector.setGameResult(chatId, incomingMessage, tempGameData, selectedStep, userCurrentStep);
             sendMessage(newMessage);
 
