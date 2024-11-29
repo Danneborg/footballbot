@@ -52,17 +52,16 @@ public class GameSessionData {
         return gameResults.get(gameResults.size() - 1);
     }
 
-    public boolean moreAtLeastOneFinishedGame() {
+    public boolean atLeastOneFinishedGame() {
         return gameResults.stream()
                 .map(GameResult::isGameFinished)
                 .filter(Boolean::booleanValue)
                 .findFirst().orElse(false);
     }
 
-    public List<Step> getStepsForSetResult() {
+    public Set<Step> getStepsForSetResult() {
         return rostersWithPlayers.keySet().stream()
-                .map(RosterType::getStepForSetGameResult)
-                .collect(Collectors.toList());
+                .map(RosterType::getStepForSetGameResult).collect(Collectors.toSet());
     }
 
     public List<Step> getNotFullRosters() {

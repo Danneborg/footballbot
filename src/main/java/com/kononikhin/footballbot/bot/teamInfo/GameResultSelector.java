@@ -3,7 +3,6 @@ package com.kononikhin.footballbot.bot.teamInfo;
 import com.kononikhin.footballbot.bot.Utils;
 import com.kononikhin.footballbot.bot.constants.Goal;
 import com.kononikhin.footballbot.bot.constants.RosterType;
-import com.kononikhin.footballbot.bot.constants.Score;
 import com.kononikhin.footballbot.bot.constants.Step;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -24,9 +23,9 @@ public class GameResultSelector {
         messageToSend.setChatId(chatId);
 
         var listOfSteps = gameSessionData.getStepsForSetResult();
-        var keyboard = Utils.createKeyBoard(listOfSteps);
+        var keyboard = Utils.createKeyBoard(new ArrayList<>(listOfSteps));
 
-        if (gameSessionData.moreAtLeastOneFinishedGame()) {
+        if (gameSessionData.atLeastOneFinishedGame()) {
             listOfSteps.add(Step.FINISH_A_GAME_DAY);
         }
 
@@ -47,13 +46,12 @@ public class GameResultSelector {
         var tempGameResult = gameSessionData.getLastGameResult();
         var tempRosterType = RosterType.getRosterTypeFromStep(selectedStep);
 
-        //Если параметр 1, то это название команды для которой нужно установить результат, следовательно, нужно отобразить кнопки со счетом
+        //Если передан 1 параметр, то это название команды для которой нужно установить результат, нужно отобразить кнопки выбора бомбардира или об отсутствии счета
         if (params.length == 1) {
-
 
             tempGameResult.setTeam(tempRosterType);
 
-            var keyboard = createKeyBoard(Score.POSSIBLE_SCORE_LIST, selectedStep);
+            var keyboard = createKeyBoard(Goal.SET_BOMBARDIER_OR_NO_GOAL, selectedStep);
 
             messageToSend.setReplyMarkup(keyboard);
             userCurrentStep.put(chatId, selectedStep);
@@ -61,23 +59,37 @@ public class GameResultSelector {
 
         } else if (params.length == 2) {
             messageToSend.setText(selectedStep.getStepDescription());
-            var tempTeamScore = Score.fromConsoleCommand(params[1]);
+            var goalCommand = Goal.fromConsoleCommand(params[1]);
             //TODO Уходим на шаг отображения оставшейся команды и задания ее счета
-            if (Score.SCORE_ZERO.equals(tempTeamScore)) {
+            //TODO надо как-то определить, что это была вторая команда и в таком случае отображать все команды
+            if (Goal.SET_NO_GOAL.equals(goalCommand) || Goal.NO_ASSISTANT.equals(goalCommand)) {
+
+                var listOfTeams = gameSessionData.getStepsForSetResult();
+                listOfTeams.remove(Step.fromConsoleCommand(params[0]));
+                var keyboard = Utils.createKeyBoard(new ArrayList<>(listOfTeams));
+
+                if (gameSessionData.atLeastOneFinishedGame()) {
+                    listOfTeams.add(Step.FINISH_A_GAME_DAY);
+                }
+
+                messageToSend.setReplyMarkup(keyboard);
+                messageToSend.setText(Step.SET_A_SINGLE_RESULT.getStepDescription());
+                userCurrentStep.put(chatId, selectedStep);
 
             }
-            //Есть результат больше 0, нужно начать цикл внесения результатов
+            //Есть голы есть, нужно начать цикл внесения результатов
             else {
 
-                //Первый заход в цикл, нужно задать результат и отобразить кнопки с выбором бомбардира
-                if (tempGameResult.getNumberOfGoals(tempRosterType) < 1) {
-                    tempGameResult.setNumberOfGoals(tempRosterType, tempTeamScore.getButtonText());
-                    setSelectBombardier(gameSessionData, selectedStep, tempRosterType, messageToSend);
+                //TODO нельзя вносить ассистента до внесения бомбардира, отобразить список игроков команды и указать, что будет произведен выбор бомбардира
+                if (Goal.SET_ASSISTANT.equals(goalCommand)) {
 
-                } else {
-                    //TODO попадание сюда это ошибка, нужно понять как сюда попал пользак и вернуть его на предыдущий шаг, а лучше сделать невозможным попадание сюда
-                    System.err.print("TODO попадание сюда это ошибка, нужно понять как сюда попал пользак и вернуть его на предыдущий шаг, а лучше сделать невозможным попадание сюда");
                 }
+
+                //TODO сюда напрашивается проверка на ошибку, чутье подсказывает, что надо, но конкретики пока нет
+                var players = gameSessionData.getRosterPlayers(tempRosterType);
+                var keyboard = createKeyBoard(new ArrayList<>(players), selectedStep, Goal.SET_BOMBARDIER, false);
+                messageToSend.setReplyMarkup(keyboard);
+                messageToSend.setText(String.format("%s для команды : %s", Goal.SET_BOMBARDIER.getButtonText(), tempRosterType.getColour()));
             }
 
         }
@@ -98,8 +110,8 @@ public class GameResultSelector {
                 players.remove(params[2]);
                 var keyboard = createKeyBoard(new ArrayList<>(players), selectedStep, Goal.SET_ASSISTANT, true);
                 messageToSend.setReplyMarkup(keyboard);
-                messageToSend.setText(Goal.SET_ASSISTANT.getButtonText());
-
+                messageToSend.setText(String.format("%s для команды : %s.\nИли укажи, что ассистента нет.", Goal.SET_ASSISTANT.getButtonText(), tempRosterType.getColour()));
+                userCurrentStep.put(chatId, selectedStep);
             } else if (Goal.SET_ASSISTANT.equals(goalCommand) || Goal.NO_ASSISTANT.equals(goalCommand)) {
 
                 if (Goal.SET_ASSISTANT.equals(goalCommand)) {
@@ -107,14 +119,15 @@ public class GameResultSelector {
                 }
                 lastUncompletedGoalInfo.setAssistantSet(true);
                 lastUncompletedGoalInfo.setGoalComplete(true);
-                //Если количество завершенных голов меньше количества общих, то повторяем цикл
-                if (tempGameResult.rosterSingleGameInfoIsNotFull(tempRosterType)) {
-                    setSelectBombardier(gameSessionData, selectedStep, tempRosterType, messageToSend);
-                }
-                //TODO добавить проверку на то, что игра в целом завершена и обе команды имеют результат
-                else {
-                    System.err.print("TODO реализовать проверку на конец одиночной игры или выбора команды для ");
-                }
+
+                //Весь цикл нужно повторять пока не придет команда Goal.SET_NO_GOAL, следовательно, отображаем кнопки выбрать бомбардира или выбрать другую команду
+                //TODO надо как-то определить, что это была вторая команда и отобразить кнопку TO_RESULT_SETTING
+                var keyboard = createKeyBoard(Goal.SET_BOMBARDIER_OR_NO_GOAL, selectedStep);
+
+                messageToSend.setReplyMarkup(keyboard);
+                userCurrentStep.put(chatId, selectedStep);
+                messageToSend.setText(String.format("Гол для команды %s добавлен, всего голов %s.\n Добавь еще гол или выбери вторую команду",
+                        tempRosterType.getColour(), tempGameResult.getNumberOfGoals(tempRosterType)));
 
             }
             //TODO попадание сюда это ошибка, нужно понять как сюда попал пользак и вернуть его на предыдущий шаг, а лучше сделать невозможным попадание сюда
@@ -135,19 +148,11 @@ public class GameResultSelector {
         return messageToSend;
     }
 
-    private void setSelectBombardier(GameSessionData gameSessionData, Step selectedStep, RosterType tempRosterType, SendMessage messageToSend) {
-        var players = gameSessionData.getRosterPlayers(tempRosterType);
-
-        var keyboard = createKeyBoard(new ArrayList<>(players), selectedStep, Goal.SET_BOMBARDIER, false);
-        messageToSend.setReplyMarkup(keyboard);
-        messageToSend.setText(Goal.SET_BOMBARDIER.getButtonText());
-    }
-
-    public List<InlineKeyboardButton> createNoAssistButton(Step step, Goal goal) {
+    public List<InlineKeyboardButton> createNoAssistOrNoGoalOrAssistButton(Step step, Goal goal) {
         List<InlineKeyboardButton> tempButtonRow = new ArrayList<>();
         var tempButton = new InlineKeyboardButton();
-        tempButton.setText(Goal.NO_ASSISTANT.getButtonText());
-        tempButton.setCallbackData(String.format("%s:%s:%s", step.getConsoleCommand(), goal.getConsoleCommand(), Goal.NO_ASSISTANT.getConsoleCommand()));
+        tempButton.setText(goal.getButtonText());
+        tempButton.setCallbackData(String.format("%s:%s", step.getConsoleCommand(), goal.getConsoleCommand()));
         tempButtonRow.add(tempButton);
         return tempButtonRow;
 
@@ -191,7 +196,7 @@ public class GameResultSelector {
         }
 
         if (addNoAssistantButton) {
-            rowsInline.add(createNoAssistButton(step, goal));
+            rowsInline.add(createNoAssistOrNoGoalOrAssistButton(step, Goal.NO_ASSISTANT));
         }
 
         markupInline.setKeyboard(rowsInline);
@@ -199,7 +204,7 @@ public class GameResultSelector {
         return markupInline;
     }
 
-    private InlineKeyboardMarkup createKeyBoard(List<Score> possibleScoreList, Step rosterToFill) {
+    private InlineKeyboardMarkup createKeyBoard(List<Goal> bombardierOrNoGoal, Step rosterToFill) {
         var markupInline = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
 
@@ -209,7 +214,7 @@ public class GameResultSelector {
          Учитывая, что редко играет 4 команды по 5 человек, то с запасом в сценарии с выбором игроков
          */
 
-        var numberOfRows = Utils.defineNumberOfRows(possibleScoreList.size());
+        var numberOfRows = Utils.defineNumberOfRows(bombardierOrNoGoal.size());
 
         int count = 0;
         for (int i = 0; i < numberOfRows; i++) {
@@ -218,9 +223,9 @@ public class GameResultSelector {
 
 
             for (int j = 0; j < Utils.ELEMENTS_IN_A_ROW; j++) {
-                if (count < possibleScoreList.size()) {
+                if (count < bombardierOrNoGoal.size()) {
 
-                    var tempStep = possibleScoreList.get(count);
+                    var tempStep = bombardierOrNoGoal.get(count);
 
                     var tempButton = new InlineKeyboardButton();
                     tempButton.setText(String.valueOf(tempStep.getButtonText()));

@@ -1,6 +1,7 @@
 package com.kononikhin.footballbot.bot.constants;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -9,13 +10,17 @@ import java.util.Set;
 import static com.kononikhin.footballbot.bot.constants.Step.*;
 
 @Getter
+@RequiredArgsConstructor
 public enum RosterType {
 
-    RED,
-    GREEN,
-    BLUE,
-    NAKED,
+    RED("Красные"),
+    GREEN("Зеленые"),
+    BLUE("Синие"),
+    NAKED("Голые"),
     ;
+
+    //TODO цвета можно вынести в отдельный энам
+    private final String colour;
 
     @Getter
     private static final Set<RosterType> ALL_ROSTERS = new HashSet<>();

@@ -24,7 +24,7 @@ public enum Step {
     SELECT_BLUE_ROSTER("/select_blue_roster", "Синие", "Выбери игроков для Синей команды"),
     SELECT_NAKED_ROSTER("/select_naked_roster", "Голые", "Выбери игроков для Раздетой команды"),
     TO_RESULT_SETTING("/to_result_setting", "Перейти к внесению результатов игр", "Отлично! Все составы набраны, можно вносить результаты игр!"),
-    SET_A_SINGLE_RESULT("/set_a_single_result", "Внести результат", "Внеси поочереди результаты сыгранной игры.\nИли закончи игровой день."),
+    SET_A_SINGLE_RESULT("/set_a_single_result", "Внести результат", "Внеси поочереди результаты сыгранного матча.\nИли закончи игровой день."),
     FINISH_A_GAME_DAY("/finish_a_game_day", "Завершить игровой день.", "Отлично поиграли сегодня! Завершить игровой день и отправить статистику в чат."),
     SET_RED_ROSTER_RESULT("/set_red_roster_result", "Счет Красные", "Внеси результат команды Красные"),
     SET_GREEN_ROSTER_RESULT("/set_green_roster_result", "Счет Зеленые", "Внеси результат команды Зеленые"),

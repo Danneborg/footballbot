@@ -14,6 +14,10 @@ public class RosterSingleGameInfo {
     private int numberOfGoals = 0;
     private List<SingleGoal> goals = new ArrayList<>();
 
+    public long getNumberOfGoals() {
+        return goals.stream().filter(SingleGoal::isGoalComplete).count();
+    }
+
     public boolean infoIsNotFull() {
 
         return numberOfGoals > goals.stream().filter(SingleGoal::isGoalComplete).count();

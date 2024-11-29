@@ -43,10 +43,6 @@ public class GameResult {
 
         }
 
-        if (CollectionUtils.isEmpty(result.get(rosterType).getGoals())) {
-
-
-        }
         var tempSingleGoalInfoList = result.get(rosterType).getGoals();
 
         if (CollectionUtils.isEmpty(tempSingleGoalInfoList)) {
@@ -58,10 +54,10 @@ public class GameResult {
             }
         }
 
-        return tempSingleGoalInfoList.get(getResult().size() - 1);
+        return tempSingleGoalInfoList.get(tempSingleGoalInfoList.size() - 1);
     }
 
-    public int getNumberOfGoals(RosterType rosterType) {
+    public long getNumberOfGoals(RosterType rosterType) {
         return result.get(rosterType).getNumberOfGoals();
     }
 
