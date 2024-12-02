@@ -58,22 +58,32 @@ public class GameResultSelector {
             messageToSend.setText(selectedStep.getStepDescription());
 
         } else if (params.length == 2) {
-            messageToSend.setText(selectedStep.getStepDescription());
+
             var goalCommand = Goal.fromConsoleCommand(params[1]);
             //TODO Уходим на шаг отображения оставшейся команды и задания ее счета
             //TODO надо как-то определить, что это была вторая команда и в таком случае отображать все команды
-            if (Goal.SET_NO_GOAL.equals(goalCommand) || Goal.NO_ASSISTANT.equals(goalCommand)) {
+            if (Goal.SET_NO_GOAL.equals(goalCommand)) {
+
+                tempGameResult.setRosterTeamScoreFinished(tempRosterType);
 
                 var listOfTeams = gameSessionData.getStepsForSetResult();
-                listOfTeams.remove(Step.fromConsoleCommand(params[0]));
-                var keyboard = Utils.createKeyBoard(new ArrayList<>(listOfTeams));
 
-                if (gameSessionData.atLeastOneFinishedGame()) {
-                    listOfTeams.add(Step.FINISH_A_GAME_DAY);
+                if(!tempGameResult.isGameFinished()){
+                    messageToSend.setText("Выбери вторую сыгравшую команду");
+                    listOfTeams.remove(Step.fromConsoleCommand(params[0]));
+                }else {
+                    messageToSend.setText("Выбери первую сыгравшую команду");
                 }
 
+                var listSteps = new ArrayList<>(listOfTeams);
+
+                if (gameSessionData.atLeastOneFinishedGame()) {
+                    listSteps.add(Step.FINISH_A_GAME_DAY);
+                }
+
+                var keyboard = Utils.createKeyBoard(listSteps);
                 messageToSend.setReplyMarkup(keyboard);
-                messageToSend.setText(Step.SET_A_SINGLE_RESULT.getStepDescription());
+
                 userCurrentStep.put(chatId, selectedStep);
 
             }
@@ -85,9 +95,17 @@ public class GameResultSelector {
 
                 }
 
+                boolean addNoGoalButton = false;
+
+                //TODO нужно поменять описание шага, чтобы сразу было видно, что можно указать отсутствие голов
+                if(Goal.NO_ASSISTANT.equals(goalCommand)) {
+                    addNoGoalButton = true;
+                }
+
                 //TODO сюда напрашивается проверка на ошибку, чутье подсказывает, что надо, но конкретики пока нет
                 var players = gameSessionData.getRosterPlayers(tempRosterType);
-                var keyboard = createKeyBoard(new ArrayList<>(players), selectedStep, Goal.SET_BOMBARDIER, false);
+                var keyboard = createKeyBoard(new ArrayList<>(players), selectedStep, Goal.SET_BOMBARDIER, false, addNoGoalButton);
+
                 messageToSend.setReplyMarkup(keyboard);
                 messageToSend.setText(String.format("%s для команды : %s", Goal.SET_BOMBARDIER.getButtonText(), tempRosterType.getColour()));
             }
@@ -101,14 +119,13 @@ public class GameResultSelector {
             var lastUncompletedGoalInfo = tempGameResult.getLastSingleGoalInfo(tempRosterType);
             var players = gameSessionData.getRosterPlayers(tempRosterType);
 
-            //TODO разобраться с ошибкой почему идет неверное вычисление и внесение результатов для голов больше 1
             if (Goal.SET_BOMBARDIER.equals(goalCommand)) {
 
                 lastUncompletedGoalInfo.setBombardier(params[2]);
                 lastUncompletedGoalInfo.setBombardierSet(true);
                 //Бомбардира задали, нужно либо выбрать ассистента, либо указать, что гол без асиста
                 players.remove(params[2]);
-                var keyboard = createKeyBoard(new ArrayList<>(players), selectedStep, Goal.SET_ASSISTANT, true);
+                var keyboard = createKeyBoard(new ArrayList<>(players), selectedStep, Goal.SET_ASSISTANT, true, false);
                 messageToSend.setReplyMarkup(keyboard);
                 messageToSend.setText(String.format("%s для команды : %s.\nИли укажи, что ассистента нет.", Goal.SET_ASSISTANT.getButtonText(), tempRosterType.getColour()));
                 userCurrentStep.put(chatId, selectedStep);
@@ -158,7 +175,7 @@ public class GameResultSelector {
 
     }
 
-    private InlineKeyboardMarkup createKeyBoard(List<String> players, Step step, Goal goal, boolean addNoAssistantButton) {
+    private InlineKeyboardMarkup createKeyBoard(List<String> players, Step step, Goal goal, boolean addNoAssistantButton, boolean addNoGoalButton) {
         var markupInline = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
 
@@ -197,6 +214,10 @@ public class GameResultSelector {
 
         if (addNoAssistantButton) {
             rowsInline.add(createNoAssistOrNoGoalOrAssistButton(step, Goal.NO_ASSISTANT));
+        }
+
+        if (addNoGoalButton) {
+            rowsInline.add(createNoAssistOrNoGoalOrAssistButton(step, Goal.SET_NO_GOAL));
         }
 
         markupInline.setKeyboard(rowsInline);

@@ -1,8 +1,9 @@
 package com.kononikhin.footballbot.bot;
 
 import com.kononikhin.footballbot.bot.constants.Step;
-import com.kononikhin.footballbot.bot.teamInfo.GameSessionData;
 import com.kononikhin.footballbot.bot.teamInfo.GameResultSelector;
+import com.kononikhin.footballbot.bot.teamInfo.GameSessionData;
+import com.kononikhin.footballbot.bot.teamInfo.GameSessionStatisticSelector;
 import com.kononikhin.footballbot.bot.teamInfo.PlayersSelector;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 
@@ -32,6 +34,8 @@ public class FootballBot extends TelegramLongPollingBot {
     private GameResultSelector gameResultSelector;
     @Autowired
     private PlayersSelector playersSelector;
+    @Autowired
+    private GameSessionStatisticSelector statisticSelector;
 
     /**
      * TODO переместить это в БД
@@ -94,13 +98,25 @@ public class FootballBot extends TelegramLongPollingBot {
         //TODO отправить сообщение, что такой команды/шага нет, и вернуть на предыдущий/стартовый шаг
         //TODO обработать вариант, когда вернулся UNKNOWN и нужно вернуть пользака на предыдущий шаг
         //TODO отработать вариант проверки, что человек не ввел руками неверный следующий шаг, допустим после START нельзя сразу выбирать составы, необходим анализ предыдущего шага
-        var previousUserStep = userCurrentStep.computeIfAbsent(chatId, s -> Step.START);
-        var selectedStep = Step.fromConsoleCommand(incomingMessage);
+        //Предыдущего шага нет, либо пользак написал впервые, либо бот потерял кэш и данных о предыдущих шагах нет
+        Step previousUserStep;
+        Step selectedStep;
 
+        if (!userCurrentStep.containsKey(chatId)) {
+            previousUserStep = userCurrentStep.computeIfAbsent(chatId, s -> Step.START);
+            selectedStep = previousUserStep;
+        } else {
+            previousUserStep = userCurrentStep.get(chatId);
+            selectedStep = Step.fromConsoleCommand(incomingMessage);
+        }
+
+        //TODO возможно этот костыль можно реализовать через выбор селекторов в зависимости от шага,
+        // сделать во вспомогательном классе это ветвление и просто в нем возвращать селектор в зависимости от шага,
+        // а сам селектор уже вернут сообщение, пока у существующих селекторов разная сигнатура, подумать над унификацией
         //Сейчас будут костыли, но пока не знаю как вынести весь подпроцесс выбора игроков для команд красиво
         if (Step.PLAYER_SELECTION_TRIGGERS.contains(selectedStep)) {
 
-            var tempGameData = userRosters.computeIfAbsent(chatId, s -> new GameSessionData());
+            var tempGameData = userRosters.computeIfAbsent(chatId, s -> new GameSessionData(chatId, UUID.randomUUID()));
 
             var newMessage = playersSelector.createMessage(chatId, incomingMessage, tempGameData, selectedStep, ALL_PLAYERS, userCurrentStep);
 
@@ -109,20 +125,26 @@ public class FootballBot extends TelegramLongPollingBot {
         } else if (Step.TO_RESULT_SETTING.equals(selectedStep)) {
 
             //TODO добавить ошибку если руками была введена команда без набранных ростеров
-            var tempGameData = userRosters.computeIfAbsent(chatId, s -> new GameSessionData());
+            var tempGameData = userRosters.computeIfAbsent(chatId, s -> new GameSessionData(chatId, UUID.randomUUID()));
             var newMessage = gameResultSelector.initiateSettingResults(chatId, tempGameData, selectedStep, userCurrentStep);
             sendMessage(newMessage);
 
         } else if (Step.GAME_RESULT_SET_TRIGGERS.contains(selectedStep)) {
 
             //TODO добавить ошибку если руками была введена команда без набранных ростеров
-            var tempGameData = userRosters.computeIfAbsent(chatId, s -> new GameSessionData());
+            var tempGameData = userRosters.computeIfAbsent(chatId, s -> new GameSessionData(chatId, UUID.randomUUID()));
             var newMessage = gameResultSelector.setGameResult(chatId, incomingMessage, tempGameData, selectedStep, userCurrentStep);
             sendMessage(newMessage);
 
+        } else if (Step.FINISH_A_GAME_DAY.equals(selectedStep)) {
+
+            var tempGameData = userRosters.computeIfAbsent(chatId, s -> new GameSessionData(chatId, UUID.randomUUID()));
+            var message = statisticSelector.createMessage(chatId, incomingMessage, tempGameData, selectedStep, userCurrentStep);
+            sendMessage(message);
+
         } else {
 
-            var nextStep = Step.getNextStep(Step.fromConsoleCommand(incomingMessage).getConsoleCommand());
+            var nextStep = Step.getNextStep(selectedStep.getConsoleCommand());
 
             var keyboard = Utils.createKeyBoard(nextStep);
 

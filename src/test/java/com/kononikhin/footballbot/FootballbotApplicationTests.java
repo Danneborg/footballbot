@@ -11,6 +11,7 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 
 public class FootballbotApplicationTests {
@@ -36,7 +37,7 @@ public class FootballbotApplicationTests {
     public void testAddNewRoster() {
 
         Long chatId = 1L;
-        var gameData = new GameSessionData();
+        var gameData = new GameSessionData(chatId, UUID.randomUUID());
         var playersSelector = new PlayersSelector();
         Map<Long, Step> userCurrentStep = new HashMap<>();
 

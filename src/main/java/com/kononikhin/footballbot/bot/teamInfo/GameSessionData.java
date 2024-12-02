@@ -3,6 +3,7 @@ package com.kononikhin.footballbot.bot.teamInfo;
 import com.kononikhin.footballbot.bot.constants.RosterType;
 import com.kononikhin.footballbot.bot.constants.Step;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
@@ -11,7 +12,11 @@ import java.util.stream.Collectors;
 
 //TODO для разных пользователей должен быть свой объект
 //TODO покрыть тестами функционал методов
+@RequiredArgsConstructor
 public class GameSessionData {
+
+    private final Long chatId;
+    private final UUID uuid;
 
     @Getter
     private final List<GameResult> gameResults = new ArrayList<>();
@@ -56,7 +61,7 @@ public class GameSessionData {
         return gameResults.stream()
                 .map(GameResult::isGameFinished)
                 .filter(Boolean::booleanValue)
-                .findFirst().orElse(false);
+                .findAny().orElse(false);
     }
 
     public Set<Step> getStepsForSetResult() {

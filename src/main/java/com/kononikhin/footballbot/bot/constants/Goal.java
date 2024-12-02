@@ -17,7 +17,7 @@ public enum Goal {
     SET_BOMBARDIER("/set_bombardier", "Укажи бомбардира"),
     SET_ASSISTANT("/set_assistant", "Укажи ассистента"),
     NO_ASSISTANT("/set_no_assistant", "Ассистента нет"),
-    SET_NO_GOAL("/set_no_goal", "Голы не забиты"),
+    SET_NO_GOAL("/set_no_goal", "Голы не забиты или голы закончились"),
     SET_SECOND_TEAM("/set_second_team", "Выбрать вторую команду"),
     UNKNOWN("/unknown", "Неизвестный шаг"),
     ;

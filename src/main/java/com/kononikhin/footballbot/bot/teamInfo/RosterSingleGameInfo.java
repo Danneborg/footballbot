@@ -11,16 +11,9 @@ import java.util.List;
 public class RosterSingleGameInfo {
 
     private boolean singleGameScoreSet = false;
-    private int numberOfGoals = 0;
     private List<SingleGoal> goals = new ArrayList<>();
 
     public long getNumberOfGoals() {
         return goals.stream().filter(SingleGoal::isGoalComplete).count();
-    }
-
-    public boolean infoIsNotFull() {
-
-        return numberOfGoals > goals.stream().filter(SingleGoal::isGoalComplete).count();
-
     }
 }
