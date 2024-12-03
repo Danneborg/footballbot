@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.CollectionUtils;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -17,6 +18,8 @@ public class GameSessionData {
 
     private final Long chatId;
     private final UUID uuid;
+    @Getter
+    private final LocalDate sessionDate;
 
     @Getter
     private final List<GameResult> gameResults = new ArrayList<>();

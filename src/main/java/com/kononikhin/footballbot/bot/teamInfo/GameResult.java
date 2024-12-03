@@ -5,10 +5,10 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.util.CollectionUtils;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
-//TODO реализовать хранение результатов одиночной игры, кто выиграл/проиграл, кто забил и отдал пас
 @Setter
 @Getter
 public class GameResult {
@@ -107,7 +107,6 @@ public class GameResult {
 
     private void defineWinner() {
 
-
         RosterType teamOne = null;
         RosterType teamTwo = null;
         int teamOneGoals = 0;
@@ -116,23 +115,30 @@ public class GameResult {
         //TODO добавить проверку, что в мапе 2 и только 2 значения
         for (Map.Entry<RosterType, RosterSingleGameInfo> entry : result.entrySet()) {
             int numGoals = entry.getValue().getGoals().size();
-            if(teamOne == null){
+            if (teamOne == null) {
                 teamOne = entry.getKey();
                 teamOneGoals = numGoals;
-            }else {
+            } else {
                 teamTwo = entry.getKey();
                 teamTwoGoals = numGoals;
             }
         }
 
-        if(teamOneGoals == teamTwoGoals){
+        var tempTeamOneResult = result.get(teamOne);
+        var tempTeamTwoResult = result.get(teamOne);
+        tempTeamOneResult.setGoalsGot(teamTwoGoals);
+        tempTeamTwoResult.setGoalsGot(teamOneGoals);
+
+        if (teamOneGoals == teamTwoGoals) {
             isDraw = true;
-        }else if(teamOneGoals > teamTwoGoals){
             winner = teamOne;
             looser = teamTwo;
-        }else {
+        } else if (teamOneGoals > teamTwoGoals) {
+            winner = teamOne;
+            looser = teamTwo;
+        } else {
             winner = teamTwo;
-            looser = teamOne ;
+            looser = teamOne;
         }
 
     }

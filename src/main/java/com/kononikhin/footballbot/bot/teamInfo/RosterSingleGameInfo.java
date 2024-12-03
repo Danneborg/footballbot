@@ -10,6 +10,7 @@ import java.util.List;
 @Setter
 public class RosterSingleGameInfo {
 
+    private long goalsGot;
     private boolean singleGameScoreSet = false;
     private List<SingleGoal> goals = new ArrayList<>();
 
