@@ -61,7 +61,6 @@ public class GameResultSelector {
 
             var goalCommand = Goal.fromConsoleCommand(params[1]);
             //TODO Уходим на шаг отображения оставшейся команды и задания ее счета
-            //TODO надо как-то определить, что это была вторая команда и в таком случае отображать все команды
             if (Goal.SET_NO_GOAL.equals(goalCommand)) {
 
                 tempGameResult.setRosterTeamScoreFinished(tempRosterType);
@@ -116,7 +115,7 @@ public class GameResultSelector {
         else if (params.length == 3) {
 
             var goalCommand = Goal.fromConsoleCommand(params[1]);
-            var lastUncompletedGoalInfo = tempGameResult.getLastSingleGoalInfo(tempRosterType);
+            var lastUncompletedGoalInfo = tempGameResult.getLastUncompletedGoalInfo(tempRosterType);
             var players = gameSessionData.getRosterPlayers(tempRosterType);
 
             if (Goal.SET_BOMBARDIER.equals(goalCommand)) {
@@ -131,14 +130,19 @@ public class GameResultSelector {
                 userCurrentStep.put(chatId, selectedStep);
             } else if (Goal.SET_ASSISTANT.equals(goalCommand) || Goal.NO_ASSISTANT.equals(goalCommand)) {
 
+                //TODO отправить пользака на предыдущий шаг, нельзя быть ассистентом самому себе
+                if(lastUncompletedGoalInfo.getBombardier().equals(params[2])){
+
+                }
+
                 if (Goal.SET_ASSISTANT.equals(goalCommand)) {
                     lastUncompletedGoalInfo.setAssistant(params[2]);
                 }
+
                 lastUncompletedGoalInfo.setAssistantSet(true);
                 lastUncompletedGoalInfo.setGoalComplete(true);
 
                 //Весь цикл нужно повторять пока не придет команда Goal.SET_NO_GOAL, следовательно, отображаем кнопки выбрать бомбардира или выбрать другую команду
-                //TODO надо как-то определить, что это была вторая команда и отобразить кнопку TO_RESULT_SETTING
                 var keyboard = createKeyBoard(Goal.SET_BOMBARDIER_OR_NO_GOAL, selectedStep);
 
                 messageToSend.setReplyMarkup(keyboard);

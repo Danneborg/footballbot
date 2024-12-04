@@ -6,12 +6,11 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.CollectionUtils;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-//TODO для разных пользователей должен быть свой объект
 //TODO покрыть тестами функционал методов
 @RequiredArgsConstructor
 public class GameSessionData {
@@ -19,7 +18,7 @@ public class GameSessionData {
     private final Long chatId;
     private final UUID uuid;
     @Getter
-    private final LocalDate sessionDate;
+    private final LocalDateTime sessionDate;
 
     @Getter
     private final List<GameResult> gameResults = new ArrayList<>();

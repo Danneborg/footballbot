@@ -5,9 +5,10 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.util.CollectionUtils;
 
-import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Setter
 @Getter
@@ -31,7 +32,7 @@ public class GameResult {
     private Map<RosterType, RosterSingleGameInfo> result = new HashMap<>();
 
     //TODO протестировать
-    public SingleGoal getLastSingleGoalInfo(RosterType rosterType) {
+    public SingleGoal getLastUncompletedGoalInfo(RosterType rosterType) {
 
         //TODO вернуть на предыдущий шаг, скорее всего ввели команду руками или был лаг бота
         if (!result.containsKey(rosterType)) {
@@ -50,6 +51,23 @@ public class GameResult {
         }
 
         return tempSingleGoalInfoList.get(tempSingleGoalInfoList.size() - 1);
+    }
+
+    public Optional<SingleGoal> getLastCompletedGoalInfo(RosterType rosterType) {
+        if (!result.containsKey(rosterType)) {
+            return Optional.empty();
+        }
+
+        var tempSingleGoalInfoList = result.get(rosterType)
+                .getGoals().stream()
+                .filter(SingleGoal::isGoalComplete)
+                .toList();
+
+        if (CollectionUtils.isEmpty(tempSingleGoalInfoList)) {
+            return Optional.empty();
+        }
+
+        return Optional.of(tempSingleGoalInfoList.get(tempSingleGoalInfoList.size() - 1));
     }
 
     public long getNumberOfGoals(RosterType rosterType) {

@@ -31,10 +31,10 @@ public enum Step {
     SET_BLUE_ROSTER_RESULT("/set_blue_roster_result", "Счет Синие", "Внеси результат команды Синие"),
     SET_NAKED_ROSTER_RESULT("/set_naked_roster_result", "Счет Голые", "Внеси результат команды Голые"),
 
-    SET_RED_ROSTER_SCORE("/set_red_roster_score", "Счет Красные", "Внеси результат команды Красные"),
-    SET_GREEN_ROSTER_SCORE("/set_green_roster_score", "Счет Зеленые", "Внеси результат команды Зеленые"),
-    SET_BLUE_ROSTER_SCORE("/set_blue_roster_score", "Счет Синие", "Внеси результат команды Синие"),
-    SET_NAKED_ROSTER_SCORE("/set_naked_roster_score", "Счет Голые", "Внеси результат команды Голые"),
+//    SET_RED_ROSTER_SCORE("/set_red_roster_score", "Счет Красные", "Внеси результат команды Красные"),
+//    SET_GREEN_ROSTER_SCORE("/set_green_roster_score", "Счет Зеленые", "Внеси результат команды Зеленые"),
+//    SET_BLUE_ROSTER_SCORE("/set_blue_roster_score", "Счет Синие", "Внеси результат команды Синие"),
+//    SET_NAKED_ROSTER_SCORE("/set_naked_roster_score", "Счет Голые", "Внеси результат команды Голые"),
 
     ;
 
