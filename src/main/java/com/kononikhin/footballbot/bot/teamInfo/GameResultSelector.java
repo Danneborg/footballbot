@@ -56,8 +56,11 @@ public class GameResultSelector {
             messageToSend.setReplyMarkup(keyboard);
             userCurrentStep.put(chatId, selectedStep);
             messageToSend.setText(selectedStep.getStepDescription());
-
-        } else if (params.length == 2) {
+        }
+        else if((Step.GAME_RESULT_SET_TRIGGERS.contains(Step.fromConsoleCommand(params[0])) && tempGameResult.getResult().get(tempRosterType).isSingleGameScoreSet())){
+            System.err.print("TODO попадание сюда это ошибка, нужно понять как сюда попал пользак и вернуть его на предыдущий шаг, а лучше сделать невозможным попадание сюда");
+        }
+        else if (params.length == 2) {
 
             var goalCommand = Goal.fromConsoleCommand(params[1]);
             //TODO Уходим на шаг отображения оставшейся команды и задания ее счета
@@ -86,7 +89,7 @@ public class GameResultSelector {
                 userCurrentStep.put(chatId, selectedStep);
 
             }
-            //Есть голы есть, нужно начать цикл внесения результатов
+            //Есть голы, нужно начать цикл внесения результатов
             else {
 
                 //TODO нельзя вносить ассистента до внесения бомбардира, отобразить список игроков команды и указать, что будет произведен выбор бомбардира
@@ -96,8 +99,15 @@ public class GameResultSelector {
 
                 boolean addNoGoalButton = false;
 
-                //TODO нужно поменять описание шага, чтобы сразу было видно, что можно указать отсутствие голов
-                if(Goal.NO_ASSISTANT.equals(goalCommand)) {
+                var mainMessage = String.format("%s для команды : %s", Goal.SET_BOMBARDIER.getButtonText(), tempRosterType.getColour());
+
+                if(Goal.SET_NO_ASSISTANT.equals(goalCommand)) {
+                    var lastUncompletedGoalInfo = tempGameResult.getLastUncompletedGoalInfo(tempRosterType);
+                    if(lastUncompletedGoalInfo.isBombardierSet()){
+                        lastUncompletedGoalInfo.setGoalComplete(true);
+                    }
+                    mainMessage +=  String.format("\nГол для команды %s добавлен, всего голов %s.",
+                            tempRosterType.getColour(), tempGameResult.getNumberOfGoals(tempRosterType));
                     addNoGoalButton = true;
                 }
 
@@ -106,7 +116,7 @@ public class GameResultSelector {
                 var keyboard = createKeyBoard(new ArrayList<>(players), selectedStep, Goal.SET_BOMBARDIER, false, addNoGoalButton);
 
                 messageToSend.setReplyMarkup(keyboard);
-                messageToSend.setText(String.format("%s для команды : %s", Goal.SET_BOMBARDIER.getButtonText(), tempRosterType.getColour()));
+                messageToSend.setText(mainMessage);
             }
 
         }
@@ -128,7 +138,7 @@ public class GameResultSelector {
                 messageToSend.setReplyMarkup(keyboard);
                 messageToSend.setText(String.format("%s для команды : %s.\nИли укажи, что ассистента нет.", Goal.SET_ASSISTANT.getButtonText(), tempRosterType.getColour()));
                 userCurrentStep.put(chatId, selectedStep);
-            } else if (Goal.SET_ASSISTANT.equals(goalCommand) || Goal.NO_ASSISTANT.equals(goalCommand)) {
+            } else if (Goal.SET_ASSISTANT.equals(goalCommand) || Goal.SET_NO_ASSISTANT.equals(goalCommand)) {
 
                 //TODO отправить пользака на предыдущий шаг, нельзя быть ассистентом самому себе
                 if(lastUncompletedGoalInfo.getBombardier().equals(params[2])){
@@ -147,7 +157,7 @@ public class GameResultSelector {
 
                 messageToSend.setReplyMarkup(keyboard);
                 userCurrentStep.put(chatId, selectedStep);
-                messageToSend.setText(String.format("Гол для команды %s добавлен, всего голов %s.\n Добавь еще гол или выбери вторую команду",
+                messageToSend.setText(String.format("Гол для команды %s добавлен, всего голов %s.\nДобавь еще гол или выбери вторую команду",
                         tempRosterType.getColour(), tempGameResult.getNumberOfGoals(tempRosterType)));
 
             }
@@ -217,7 +227,7 @@ public class GameResultSelector {
         }
 
         if (addNoAssistantButton) {
-            rowsInline.add(createNoAssistOrNoGoalOrAssistButton(step, Goal.NO_ASSISTANT));
+            rowsInline.add(createNoAssistOrNoGoalOrAssistButton(step, Goal.SET_NO_ASSISTANT));
         }
 
         if (addNoGoalButton) {

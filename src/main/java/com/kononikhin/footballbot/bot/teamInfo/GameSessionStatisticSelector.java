@@ -38,9 +38,15 @@ public class GameSessionStatisticSelector {
             addRowToTheTableGameRows(tableGameRows, singleGameInfo);
             var isDraw = singleGameInfo.isDraw();
 
+//            fillTeamInfo(singleGameInfo.getWinner(), singleGameInfo.getWinnerInfo(), rosterStatistics, isDraw, true);
+//            fillTeamInfo(singleGameInfo.getLooser(), singleGameInfo.getLooserInfo(), rosterStatistics, isDraw, false);
+//
+//            fillPlayerInfo(singleGameInfo.getWinner(), singleGameInfo.getWinnerInfo().getGoals(), playerInfo);
+//            fillPlayerInfo(singleGameInfo.getLooser(), singleGameInfo.getLooserInfo().getGoals(), playerInfo);
+
             for (var singleResult : singleGameInfo.getResult().entrySet()) {
                 var isWinner = singleGameInfo.getWinner().equals(singleResult.getKey());
-                fillTeamInfo(singleResult, rosterStatistics, isDraw, isWinner);
+                fillTeamInfo(singleResult.getKey(), singleResult.getValue(), rosterStatistics, isDraw, isWinner);
                 fillPlayerInfo(singleResult.getKey(), singleResult.getValue().getGoals(), playerInfo);
             }
 
@@ -183,14 +189,14 @@ public class GameSessionStatisticSelector {
 //
 //    }
 
-    private static void fillTeamInfo(Map.Entry<RosterType, RosterSingleGameInfo> singleResult, Map<RosterType, RosterTypeGameStatistic> rosterStatistics, boolean isDraw, boolean isWinner) {
+    private static void fillTeamInfo(RosterType rosterType, RosterSingleGameInfo singleResult, Map<RosterType, RosterTypeGameStatistic> rosterStatistics, boolean isDraw, boolean isWinner) {
         RosterTypeGameStatistic tempRosterStat;
 
-        if (rosterStatistics.containsKey(singleResult.getKey())) {
-            tempRosterStat = rosterStatistics.get(singleResult.getKey());
+        if (rosterStatistics.containsKey(rosterType)) {
+            tempRosterStat = rosterStatistics.get(rosterType);
         } else {
-            tempRosterStat = new RosterTypeGameStatistic(singleResult.getKey());
-            rosterStatistics.put(singleResult.getKey(), tempRosterStat);
+            tempRosterStat = new RosterTypeGameStatistic(rosterType);
+            rosterStatistics.put(rosterType, tempRosterStat);
         }
 
         if (isDraw) {
@@ -201,8 +207,8 @@ public class GameSessionStatisticSelector {
             tempRosterStat.addLostGame();
         }
 
-        tempRosterStat.addGoalsGot(singleResult.getValue().getGoalsGot());
-        tempRosterStat.addGoalsMade(singleResult.getValue().getGoals().size());
+        tempRosterStat.addGoalsGot(singleResult.getGoalsGot());
+        tempRosterStat.addGoalsMade(singleResult.getGoals().size());
 
     }
 

@@ -33,11 +33,11 @@ public class RosterTypeGameStatistic {
     }
 
     public void addGoalsMade(long goalsMade) {
-        gamesWon += goalsMade;
+        totalGoalsMade += goalsMade;
     }
 
     public void addGoalsGot(long goalsGot) {
-        goalsGot += goalsGot;
+        totalGoalsGot += goalsGot;
     }
 
     public long getPoints() {

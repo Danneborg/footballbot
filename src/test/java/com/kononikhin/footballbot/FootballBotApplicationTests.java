@@ -7,9 +7,11 @@ import com.kononikhin.footballbot.bot.constants.RosterType;
 import com.kononikhin.footballbot.bot.constants.Step;
 import com.kononikhin.footballbot.bot.teamInfo.GameResultSelector;
 import com.kononikhin.footballbot.bot.teamInfo.GameSessionData;
+import com.kononikhin.footballbot.bot.teamInfo.GameSessionStatisticSelector;
 import com.kononikhin.footballbot.bot.teamInfo.PlayersSelector;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -55,8 +57,10 @@ public class FootballBotApplicationTests {
 
         var sessionData = new GameSessionData(chatId, UUID.randomUUID(), LocalDateTime.now());
 
-        addPlayersToATeam(sessionData, RosterType.BLUE);
-        assert sessionData.isRosterFull(RosterType.BLUE);
+        var statisticSelector = new GameSessionStatisticSelector();
+
+//        addPlayersToATeam(sessionData, RosterType.BLUE);
+//        assert sessionData.isRosterFull(RosterType.BLUE);
 
         addPlayersToATeam(sessionData, RosterType.GREEN);
         assert sessionData.isRosterFull(RosterType.GREEN);
@@ -67,28 +71,69 @@ public class FootballBotApplicationTests {
         Map<Long, Step> userCurrentStep = new HashMap<>();
 
         var redRosterPlayers = new ArrayList<>(sessionData.getRosterPlayers(RosterType.RED));
-        var redRosterPlayer1 = redRosterPlayers.get(0);
-        var redRosterPlayer2 = redRosterPlayers.get(1);
+        var redRosterBombardier = redRosterPlayers.get(0);
+        var redRosterAssistant = redRosterPlayers.get(1);
 
         gameResultSelector.setGameResult(chatId, Step.SET_RED_ROSTER_RESULT.getConsoleCommand(), sessionData, Step.SET_RED_ROSTER_RESULT, userCurrentStep);
-        var message = gameResultSelector.setGameResult(chatId, String.format("%s:%s:%s", Step.SET_RED_ROSTER_RESULT.getConsoleCommand(), Goal.SET_BOMBARDIER.getConsoleCommand(), redRosterPlayer1), sessionData, Step.SET_RED_ROSTER_RESULT, userCurrentStep);
+        //Назначаем бомбардира
+        var message = gameResultSelector.setGameResult(chatId, String.format("%s:%s:%s", Step.SET_RED_ROSTER_RESULT.getConsoleCommand(), Goal.SET_BOMBARDIER.getConsoleCommand(), redRosterBombardier), sessionData, Step.SET_RED_ROSTER_RESULT, userCurrentStep);
         assert sessionData.getGameResults().size() == 1;
         assert !sessionData.getLastGameResult().isGameFinished();
         assert sessionData.getGameResults().get(0).isFirstTeamSet();
         assert !sessionData.getGameResults().get(0).isSecondTeamSet();
         assert sessionData.getGameResults().get(0).getNumberOfGoals(RosterType.RED) == 0;
-        assert sessionData.getGameResults().get(0).getLastUncompletedGoalInfo(RosterType.RED).getBombardier().equals(redRosterPlayer1);
+        assert sessionData.getGameResults().get(0).getLastUncompletedGoalInfo(RosterType.RED).getBombardier().equals(redRosterBombardier);
         assert !sessionData.getGameResults().get(0).getLastUncompletedGoalInfo(RosterType.RED).isGoalComplete();
 
-        gameResultSelector.setGameResult(chatId, String.format("%s:%s:%s", Step.SET_RED_ROSTER_RESULT.getConsoleCommand(), Goal.SET_ASSISTANT.getConsoleCommand(), redRosterPlayer2), sessionData, Step.SET_RED_ROSTER_RESULT, userCurrentStep);
+        //Назначаем ассистента
+        var innerMessage = gameResultSelector.setGameResult(chatId, String.format("%s:%s:%s", Step.SET_RED_ROSTER_RESULT.getConsoleCommand(), Goal.SET_ASSISTANT.getConsoleCommand(), redRosterAssistant), sessionData, Step.SET_RED_ROSTER_RESULT, userCurrentStep);
         var lastCompletedGameOpt = sessionData.getGameResults().get(0).getLastCompletedGoalInfo(RosterType.RED);
         assert lastCompletedGameOpt.isPresent();
-        assert lastCompletedGameOpt.get().getAssistant().equals(redRosterPlayer2);
+        assert lastCompletedGameOpt.get().getAssistant().equals(redRosterAssistant);
 
-        gameResultSelector.setGameResult(chatId, String.format("%s:%s", Step.SET_RED_ROSTER_RESULT.getConsoleCommand(), Goal.SET_NO_GOAL.getConsoleCommand()), sessionData, Step.SET_RED_ROSTER_RESULT, userCurrentStep);
+        var message11 = gameResultSelector.setGameResult(chatId, String.format("%s:%s:%s", Step.SET_RED_ROSTER_RESULT.getConsoleCommand(), Goal.SET_BOMBARDIER.getConsoleCommand(), redRosterBombardier), sessionData, Step.SET_RED_ROSTER_RESULT, userCurrentStep);
+        var message12 = gameResultSelector.setGameResult(chatId, String.format("%s:%s", Step.SET_RED_ROSTER_RESULT.getConsoleCommand(), Goal.SET_NO_ASSISTANT.getConsoleCommand()), sessionData, Step.SET_RED_ROSTER_RESULT, userCurrentStep);
+
+        assert sessionData.getLastGameResult().getNumberOfGoals(RosterType.RED) == 2;
+
+        //Завершаем внесение результатов для первой команды
+        var message1 = gameResultSelector.setGameResult(chatId, String.format("%s:%s", Step.SET_RED_ROSTER_RESULT.getConsoleCommand(), Goal.SET_NO_GOAL.getConsoleCommand()), sessionData, Step.SET_RED_ROSTER_RESULT, userCurrentStep);
         assert sessionData.getGameResults().get(0).getResult().get(RosterType.RED).isSingleGameScoreSet();
-        //TODO проверить отправку команды /set_red_roster_result:/set_no_assistant
+        var keyboard = (InlineKeyboardMarkup) message1.getReplyMarkup();
 
+        assert keyboard.getKeyboard().get(0).size() == sessionData.getNumberOfFullRosters() - 1;
+        for (var singleConsoleCommand : keyboard.getKeyboard().get(0)) {
+            assert !singleConsoleCommand.getCallbackData().equals(Step.SET_RED_ROSTER_RESULT.getConsoleCommand());
+        }
+
+        assert message1.getText().equals("Выбери вторую сыгравшую команду");
+        //TODO проверить отправку команды /set_red_roster_result:/set_no_assistant, добавить шаги внутри установки счета на проверку,
+        // что нельзя указать кого либо из команды, результат которой в данной игре уже задан
+        var message2 = gameResultSelector.setGameResult(chatId, String.format("%s:%s", Step.SET_RED_ROSTER_RESULT.getConsoleCommand(), Goal.SET_NO_ASSISTANT.getConsoleCommand()), sessionData, Step.SET_RED_ROSTER_RESULT, userCurrentStep);
+
+        var greenRosterPlayers = new ArrayList<>(sessionData.getRosterPlayers(RosterType.GREEN));
+        var greenRosterBombardier = redRosterPlayers.get(0);
+
+        //Завершаем внесение результатов для второй команды
+        var messageGreen = gameResultSelector.setGameResult(chatId, Step.SET_GREEN_ROSTER_RESULT.getConsoleCommand(), sessionData, Step.SET_GREEN_ROSTER_RESULT, userCurrentStep);
+        assert messageGreen.getText().equals("Внеси результат команды Зеленые");
+        var keyboardGreen = (InlineKeyboardMarkup) messageGreen.getReplyMarkup();
+        assert keyboardGreen.getKeyboard().get(0).get(0).getCallbackData().equals("/set_green_roster_result:/set_bombardier");
+        assert keyboardGreen.getKeyboard().get(0).get(0).getText().equals("Укажи бомбардира");
+        assert keyboardGreen.getKeyboard().get(0).get(1).getCallbackData().equals("/set_green_roster_result:/set_no_goal");
+        assert keyboardGreen.getKeyboard().get(0).get(1).getText().equals("Голы не забиты или голы закончились");
+
+        var message3 = gameResultSelector.setGameResult(chatId, String.format("%s:%s", Step.SET_GREEN_ROSTER_RESULT.getConsoleCommand(), Goal.SET_NO_GOAL.getConsoleCommand()), sessionData, Step.SET_GREEN_ROSTER_RESULT, userCurrentStep);
+        var keyboardFinish = (InlineKeyboardMarkup) message3.getReplyMarkup();
+
+        assert sessionData.atLeastOneFinishedGame();
+        assert keyboardFinish.getKeyboard().get(0).size() == 3;
+        assert keyboardFinish.getKeyboard().get(0).get(keyboardFinish.getKeyboard().get(0).size() -1).getCallbackData().equals("/finish_a_game_day");
+
+        var finalMessage = statisticSelector.createMessage(chatId, Step.FINISH_A_GAME_DAY.getConsoleCommand(), sessionData, Step.FINISH_A_GAME_DAY, userCurrentStep);
+
+        //TODO не добавляются голы больше 1 или с ассистентами. на тесте с 4мя голами добавилось только 2 гола
+        System.out.println();
     }
 
 

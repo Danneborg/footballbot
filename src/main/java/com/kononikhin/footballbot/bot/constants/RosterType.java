@@ -13,15 +13,16 @@ import static com.kononikhin.footballbot.bot.constants.Step.*;
 @RequiredArgsConstructor
 public enum RosterType {
 
-    RED("Красные", "\uD83D\uDFE5"),
-    GREEN("Зеленые","\uD83D\uDFE9"),
-    BLUE("Синие","\uD83D\uDFE6"),
-    NAKED("Голые","⬜"),
+    RED("Красные", "\uD83D\uDFE5", "К"),
+    GREEN("Зеленые","\uD83D\uDFE9", "З"),
+    BLUE("Синие","\uD83D\uDFE6", "С"),
+    NAKED("Голые","⬜", "Г"),
     ;
 
     //TODO цвета можно вынести в отдельный энам
     private final String colour;
     private final String emojiCode;
+    private final String shortName;
 
     @Getter
     private static final Set<RosterType> ALL_ROSTERS = new HashSet<>();

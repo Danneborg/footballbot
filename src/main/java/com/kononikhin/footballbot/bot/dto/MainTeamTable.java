@@ -22,7 +22,7 @@ public class MainTeamTable {
 
     public List<String> getRowData() {
 
-        return List.of(team.getColour(),
+        return List.of(team.getShortName(),
                 String.valueOf(totalGames),
                 String.valueOf(wins),
                 String.valueOf(draws),

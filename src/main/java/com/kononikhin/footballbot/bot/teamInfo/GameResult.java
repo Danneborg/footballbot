@@ -31,6 +31,14 @@ public class GameResult {
 
     private Map<RosterType, RosterSingleGameInfo> result = new HashMap<>();
 
+    public RosterSingleGameInfo getWinnerInfo(){
+        return result.get(winner);
+    }
+
+    public RosterSingleGameInfo getLooserInfo(){
+        return result.get(looser);
+    }
+
     //TODO протестировать
     public SingleGoal getLastUncompletedGoalInfo(RosterType rosterType) {
 
@@ -143,7 +151,7 @@ public class GameResult {
         }
 
         var tempTeamOneResult = result.get(teamOne);
-        var tempTeamTwoResult = result.get(teamOne);
+        var tempTeamTwoResult = result.get(teamTwo);
         tempTeamOneResult.setGoalsGot(teamTwoGoals);
         tempTeamTwoResult.setGoalsGot(teamOneGoals);
 

@@ -7,9 +7,9 @@ import lombok.Setter;
 @Setter
 public class SingleGoal {
 
-    public boolean isBombardierSet = false;
-    public boolean isAssistantSet = false;
-    public boolean goalComplete = false;
+    private boolean isBombardierSet = false;
+    private boolean isAssistantSet = false;
+    private boolean goalComplete = false;
 
     private String bombardier;
     private String assistant;

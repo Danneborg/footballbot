@@ -140,6 +140,7 @@ public class FootballBot extends TelegramLongPollingBot {
 
             var tempGameData = userRosters.computeIfAbsent(chatId, s -> new GameSessionData(chatId, UUID.randomUUID(), LocalDateTime.now()));
             var message = statisticSelector.createMessage(chatId, incomingMessage, tempGameData, selectedStep, userCurrentStep);
+            message.setReplyMarkup(Utils.createKeyBoard(Step.DEFAULT_BUTTON));
             sendMessage(message);
 
         } else {
