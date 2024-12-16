@@ -9,7 +9,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PlayerStatTableData {
 
-    public static final List<String> FIRST_TABLE_ROW = List.of("Цвет", "Имя", "Голы", "Асиссты");
+    public static final List<String> FIRST_TABLE_ROW = List.of("Цвет", "Имя игрока", "Голы", "Асиссты");
 
     private final RosterType firstTeam;
     private final String name;

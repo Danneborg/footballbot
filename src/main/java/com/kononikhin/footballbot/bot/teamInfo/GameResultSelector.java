@@ -71,9 +71,11 @@ public class GameResultSelector {
                 var listOfTeams = gameSessionData.getStepsForSetResult();
 
                 if(!tempGameResult.isGameFinished()){
+                    //TODO добавить сюда информацию о количестве сыгранных игр и какая пара была предыдущей
                     messageToSend.setText("Выбери вторую сыгравшую команду");
                     listOfTeams.remove(Step.fromConsoleCommand(params[0]));
                 }else {
+                    //TODO добавить сюда информацию о количестве сыгранных игр и какая пара была предыдущей
                     messageToSend.setText("Выбери первую сыгравшую команду");
                 }
 

@@ -132,7 +132,6 @@ public class FootballBotApplicationTests {
 
         var finalMessage = statisticSelector.createMessage(chatId, Step.FINISH_A_GAME_DAY.getConsoleCommand(), sessionData, Step.FINISH_A_GAME_DAY, userCurrentStep);
 
-        //TODO не добавляются голы больше 1 или с ассистентами. на тесте с 4мя голами добавилось только 2 гола
         System.out.println();
     }
 
