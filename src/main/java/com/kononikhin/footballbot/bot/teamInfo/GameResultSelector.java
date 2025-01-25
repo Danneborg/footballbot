@@ -5,6 +5,7 @@ import com.kononikhin.footballbot.bot.constants.Goal;
 import com.kononikhin.footballbot.bot.constants.RosterType;
 import com.kononikhin.footballbot.bot.constants.Step;
 import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -37,7 +38,7 @@ public class GameResultSelector {
     }
 
     public SendMessage setGameResult(Long chatId, String incomingMessage, GameSessionData gameSessionData,
-                                     Step selectedStep, Map<Long, Step> userCurrentStep) {
+                                     Step selectedStep, Map<Long, Step> userCurrentStep, SendMessage lastMessage) {
 
         SendMessage messageToSend = new SendMessage();
         messageToSend.setChatId(chatId);
@@ -56,11 +57,9 @@ public class GameResultSelector {
             messageToSend.setReplyMarkup(keyboard);
             userCurrentStep.put(chatId, selectedStep);
             messageToSend.setText(selectedStep.getStepDescription());
-        }
-        else if((Step.GAME_RESULT_SET_TRIGGERS.contains(Step.fromConsoleCommand(params[0])) && tempGameResult.getResult().get(tempRosterType).isSingleGameScoreSet())){
+        } else if ((Step.GAME_RESULT_SET_TRIGGERS.contains(Step.fromConsoleCommand(params[0])) && tempGameResult.getResult().get(tempRosterType).isSingleGameScoreSet())) {
             System.err.print("TODO попадание сюда это ошибка, нужно понять как сюда попал пользак и вернуть его на предыдущий шаг, а лучше сделать невозможным попадание сюда");
-        }
-        else if (params.length == 2) {
+        } else if (params.length == 2) {
 
             var goalCommand = Goal.fromConsoleCommand(params[1]);
             //TODO Уходим на шаг отображения оставшейся команды и задания ее счета
@@ -70,11 +69,11 @@ public class GameResultSelector {
 
                 var listOfTeams = gameSessionData.getStepsForSetResult();
 
-                if(!tempGameResult.isGameFinished()){
+                if (!tempGameResult.isGameFinished()) {
                     //TODO добавить сюда информацию о количестве сыгранных игр и какая пара была предыдущей
                     messageToSend.setText("Выбери вторую сыгравшую команду");
                     listOfTeams.remove(Step.fromConsoleCommand(params[0]));
-                }else {
+                } else {
                     //TODO добавить сюда информацию о количестве сыгранных игр и какая пара была предыдущей
                     messageToSend.setText("Выбери первую сыгравшую команду");
                 }
@@ -94,21 +93,24 @@ public class GameResultSelector {
             //Есть голы, нужно начать цикл внесения результатов
             else {
 
-                //TODO нельзя вносить ассистента до внесения бомбардира, отобразить список игроков команды и указать, что будет произведен выбор бомбардира
+                //TODO проверить работу
                 if (Goal.SET_ASSISTANT.equals(goalCommand)) {
-
+                    var tempMessageText = "<b>Нельзя вносить ассистента до внесения бомбардира! Отображено сообщение с предыдущего шага!</b>\n" + lastMessage.getText();
+                    lastMessage.setText(tempMessageText);
+                    lastMessage.setParseMode(ParseMode.HTML);
+                    return lastMessage;
                 }
 
                 boolean addNoGoalButton = false;
 
                 var mainMessage = String.format("%s для команды : %s", Goal.SET_BOMBARDIER.getButtonText(), tempRosterType.getColour());
 
-                if(Goal.SET_NO_ASSISTANT.equals(goalCommand)) {
+                if (Goal.SET_NO_ASSISTANT.equals(goalCommand)) {
                     var lastUncompletedGoalInfo = tempGameResult.getLastUncompletedGoalInfo(tempRosterType);
-                    if(lastUncompletedGoalInfo.isBombardierSet()){
+                    if (lastUncompletedGoalInfo.isBombardierSet()) {
                         lastUncompletedGoalInfo.setGoalComplete(true);
                     }
-                    mainMessage +=  String.format("\nГол для команды %s добавлен, всего голов %s.",
+                    mainMessage += String.format("\nГол для команды %s добавлен, всего голов %s.",
                             tempRosterType.getColour(), tempGameResult.getNumberOfGoals(tempRosterType));
                     addNoGoalButton = true;
                 }
@@ -142,9 +144,12 @@ public class GameResultSelector {
                 userCurrentStep.put(chatId, selectedStep);
             } else if (Goal.SET_ASSISTANT.equals(goalCommand) || Goal.SET_NO_ASSISTANT.equals(goalCommand)) {
 
-                //TODO отправить пользака на предыдущий шаг, нельзя быть ассистентом самому себе
-                if(lastUncompletedGoalInfo.getBombardier().equals(params[2])){
-
+                //TODO проверить работу
+                if (lastUncompletedGoalInfo.getBombardier().equals(params[2])) {
+                    var tempMessageText = "<b>Забивший гол не может быть ассистентом самому себе! Отображено сообщение с предыдущего шага!</b>\n" + lastMessage.getText();
+                    lastMessage.setText(tempMessageText);
+                    lastMessage.setParseMode(ParseMode.HTML);
+                    return lastMessage;
                 }
 
                 if (Goal.SET_ASSISTANT.equals(goalCommand)) {
@@ -162,22 +167,23 @@ public class GameResultSelector {
                 messageToSend.setText(String.format("Гол для команды %s добавлен, всего голов %s.\nДобавь еще гол или выбери вторую команду",
                         tempRosterType.getColour(), tempGameResult.getNumberOfGoals(tempRosterType)));
 
+            }else {
+                //TODO попадание сюда это ошибка, нужно понять как сюда попал пользак и вернуть его на предыдущий шаг, а лучше сделать невозможным попадание сюда
+                var tempMessageText = "<b>Неожиданное поведение при назначении результата, сообщите разработчику с описанием как вы получили это сообщение! Отображено сообщение с предыдущего шага!</b>\n" + lastMessage.getText();
+                lastMessage.setText(tempMessageText);
+                lastMessage.setParseMode(ParseMode.HTML);
+                return lastMessage;
             }
-            //TODO попадание сюда это ошибка, нужно понять как сюда попал пользак и вернуть его на предыдущий шаг, а лучше сделать невозможным попадание сюда
-//            System.err.print("TODO попадание сюда это ошибка, нужно понять как сюда попал пользак и вернуть его на предыдущий шаг, а лучше сделать невозможным попадание сюда");
+
         }
 
-        //TODO кинуть ошибку если пришло больше параметров
-//
-//        var setOfSteps = gameDayData.getStepsForSetResult();
-//        setOfSteps.add(Step.FINISH_A_GAME_DAY);
-//        var keyboard = Utils.createKeyBoard(listOfSteps);
-//
-//        messageToSend.setReplyMarkup(keyboard);
-//        messageToSend.setText(Step.SET_A_SINGLE_RESULT.getStepDescription());
-//
-//        userCurrentStep.put(chatId, selectedStep);
-//
+        //TODO проверить работу
+        if (params.length > 3) {
+            var tempMessageText = "<b>Количество параметров при внесении результатов не может быть больше 3! Отображено сообщение с предыдущего шага!</b>\n" + lastMessage.getText();
+            lastMessage.setText(tempMessageText);
+            return lastMessage;
+        }
+
         return messageToSend;
     }
 

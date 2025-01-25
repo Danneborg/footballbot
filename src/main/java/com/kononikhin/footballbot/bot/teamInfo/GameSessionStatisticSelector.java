@@ -32,17 +32,10 @@ public class GameSessionStatisticSelector {
 
         Map<String, PlayerStatTableData> playerInfo = new HashMap<>();
 
-        //TODO победы считаются неправильно
         for (var singleGameInfo : tempGameData.getGameResults()) {
 
             addRowToTheTableGameRows(tableGameRows, singleGameInfo);
             var isDraw = singleGameInfo.isDraw();
-
-//            fillTeamInfo(singleGameInfo.getWinner(), singleGameInfo.getWinnerInfo(), rosterStatistics, isDraw, true);
-//            fillTeamInfo(singleGameInfo.getLooser(), singleGameInfo.getLooserInfo(), rosterStatistics, isDraw, false);
-//
-//            fillPlayerInfo(singleGameInfo.getWinner(), singleGameInfo.getWinnerInfo().getGoals(), playerInfo);
-//            fillPlayerInfo(singleGameInfo.getLooser(), singleGameInfo.getLooserInfo().getGoals(), playerInfo);
 
             for (var singleResult : singleGameInfo.getResult().entrySet()) {
                 var isWinner = singleGameInfo.getWinner().equals(singleResult.getKey());
@@ -55,6 +48,8 @@ public class GameSessionStatisticSelector {
         messageToSend.setParseMode(ParseMode.HTML);
         String finalMessage = "";
 
+        //TODO сделать нормальный формат даты hh:mm DD.MM.YYYY
+        //TODO написать тест, сейчас считается неправильно считается общее количество сыгранных матчей, оно должно быть попарно завершенным играм
         finalMessage += String.format("Дата игры : %s .Всего сыгранно игр : %s\n", tempGameData.getSessionDate(), totalGamesPlayed);
         finalMessage += "Итоговая таблица по результатам игры\n";
 

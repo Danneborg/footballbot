@@ -1,6 +1,8 @@
 package com.kononikhin.footballbot.bot;
 
 import com.kononikhin.footballbot.bot.constants.Step;
+import lombok.SneakyThrows;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
@@ -26,6 +28,16 @@ public class Utils {
 
         return (numberOfButtons / ELEMENTS_IN_A_ROW) + 1;
 
+    }
+
+    @SneakyThrows
+    public static SendMessage createMessage(Long chatId, InlineKeyboardMarkup keyboard, Step selectedStep) {
+        var message = new SendMessage();
+        message.setChatId(chatId);
+        message.setReplyMarkup(keyboard);
+        message.setText(selectedStep.getStepDescription());
+
+        return message;
     }
 
     //TODO вынести в отдельный класс(через интерфейс) для создания клавиатур и элементов интерфейса чата

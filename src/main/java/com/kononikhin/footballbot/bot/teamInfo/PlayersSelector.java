@@ -74,7 +74,12 @@ public class PlayersSelector {
             var playersToSelect = gameSessionData.getNotSelectedPlayers(allPlayers);
             var keyboard = createKeyBoard(new ArrayList<>(playersToSelect), rosterToFill);
             messageToSend.setReplyMarkup(keyboard);
-            messageToSend.setText(String.format("Для команды %s осталось выбрать %s игроков", rosterToFill.getButtonText(), GameSessionData.ROSTER_SIZE - gameSessionData.getRosterSize(rosterType)));
+
+            var header = String.format("Выбранные игроки : %s", gameSessionData.getRosterPlayers(rosterType));
+            var footer = String.format("Для команды %s осталось выбрать %s игроков", rosterToFill.getButtonText(), GameSessionData.ROSTER_SIZE - gameSessionData.getRosterSize(rosterType));
+
+            messageToSend.setText(header + "\n" + footer);
+            messageToSend.setParseMode(ParseMode.HTML);
 
         }
 
