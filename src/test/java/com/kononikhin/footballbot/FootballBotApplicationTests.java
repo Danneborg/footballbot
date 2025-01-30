@@ -5,10 +5,10 @@ import com.kononikhin.footballbot.bot.Utils;
 import com.kononikhin.footballbot.bot.constants.Goal;
 import com.kononikhin.footballbot.bot.constants.RosterType;
 import com.kononikhin.footballbot.bot.constants.Step;
-import com.kononikhin.footballbot.bot.teamInfo.GameResultSelector;
+import com.kononikhin.footballbot.bot.selectors.GameResultSelector;
 import com.kononikhin.footballbot.bot.teamInfo.GameSessionData;
-import com.kononikhin.footballbot.bot.teamInfo.GameSessionStatisticSelector;
-import com.kononikhin.footballbot.bot.teamInfo.PlayersSelector;
+import com.kononikhin.footballbot.bot.selectors.GameSessionStatisticSelector;
+import com.kononikhin.footballbot.bot.selectors.PlayersSelector;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -137,7 +137,7 @@ public class FootballBotApplicationTests {
         assert keyboardFinish.getKeyboard().get(0).size() == 3;
         assert keyboardFinish.getKeyboard().get(0).get(keyboardFinish.getKeyboard().get(0).size() -1).getCallbackData().equals("/finish_a_game_day");
 
-        var finalMessage = statisticSelector.createMessage(chatId, Step.FINISH_A_GAME_DAY.getConsoleCommand(), sessionData, Step.FINISH_A_GAME_DAY, userCurrentStep);
+        var finalMessage = statisticSelector.createMessage(chatId, sessionData,  userCurrentStep);
 
         System.out.println();
     }

@@ -18,7 +18,9 @@ public class GameSessionData {
     private final Long chatId;
     private final UUID uuid;
     @Getter
-    private final LocalDateTime sessionDate;
+    private final LocalDateTime sessionDateStart;
+    private LocalDateTime sessionDateEnd;
+    private boolean isFinished = false;
 
     @Getter
     private final List<GameResult> gameResults = new ArrayList<>();
@@ -131,5 +133,9 @@ public class GameSessionData {
 
     public Set<String> getRosterPlayers(RosterType rosterType) {
         return new HashSet<>(rostersWithPlayers.get(rosterType).getSelectedPlayers());
+    }
+
+    public void setFinished(){
+        isFinished = true;
     }
 }

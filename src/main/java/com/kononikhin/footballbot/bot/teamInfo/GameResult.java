@@ -23,12 +23,6 @@ public class GameResult {
     private RosterType looser;
     private boolean isDraw = false;
 
-//    private RosterType fistTeam;
-//    private RosterType secondTeam;
-
-//    private List<GoalInfo> firstTeamScore;
-//    private List<GoalInfo> secondTeamScore;
-
     private Map<RosterType, RosterSingleGameInfo> result = new HashMap<>();
 
     public RosterSingleGameInfo getWinnerInfo(){

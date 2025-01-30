@@ -1,4 +1,4 @@
-package com.kononikhin.footballbot.bot.teamInfo;
+package com.kononikhin.footballbot.bot.selectors;
 
 import com.github.aneureka.exception.FieldsNotSetException;
 import com.github.aneureka.exception.RowSizeMismatchException;
@@ -9,6 +9,10 @@ import com.kononikhin.footballbot.bot.dto.MainTeamTable;
 import com.kononikhin.footballbot.bot.dto.PlayerStatTableData;
 import com.kononikhin.footballbot.bot.dto.RosterTypeGameStatistic;
 import com.kononikhin.footballbot.bot.dto.SingleTableRowData;
+import com.kononikhin.footballbot.bot.teamInfo.GameResult;
+import com.kononikhin.footballbot.bot.teamInfo.GameSessionData;
+import com.kononikhin.footballbot.bot.teamInfo.RosterSingleGameInfo;
+import com.kononikhin.footballbot.bot.teamInfo.SingleGoal;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -22,7 +26,7 @@ import java.util.function.Consumer;
 public class GameSessionStatisticSelector {
 
     //TODO надо как-то написать на это тест, хз вообще как, но сделать
-    public SendMessage createMessage(Long chatId, String incomingMessage, GameSessionData tempGameData, Step selectedStep, Map<Long, Step> userCurrentStep) {
+    public SendMessage createMessage(Long chatId, GameSessionData tempGameData, Map<Long, Step> userCurrentStep) {
         SendMessage messageToSend = new SendMessage();
         messageToSend.setChatId(chatId);
 
@@ -50,7 +54,7 @@ public class GameSessionStatisticSelector {
 
         //TODO сделать нормальный формат даты hh:mm DD.MM.YYYY
         //TODO написать тест, сейчас считается неправильно считается общее количество сыгранных матчей, оно должно быть попарно завершенным играм
-        finalMessage += String.format("Дата игры : %s .Всего сыгранно игр : %s\n", tempGameData.getSessionDate(), totalGamesPlayed);
+        finalMessage += String.format("Дата игры : %s .Всего сыгранно игр : %s\n", tempGameData.getSessionDateStart(), totalGamesPlayed);
         finalMessage += "Итоговая таблица по результатам игры\n";
 
         List<RosterTypeGameStatistic> sorterTeamStatistics = rosterStatistics.values().stream()
@@ -146,43 +150,6 @@ public class GameSessionStatisticSelector {
         }
     }
 
-//    private void fillPlayerInfo(RosterType key, List<SingleGoal> goals, Map<String, PlayerStatTableData> playerInfo) {
-//
-//        if (CollectionUtils.isEmpty(goals)) {
-//            return;
-//        }
-//
-//        for (var singleGoal : goals) {
-//
-//            PlayerStatTableData bombardier;
-//
-//            if (playerInfo.containsKey(singleGoal.getBombardier())) {
-//                bombardier = playerInfo.get(singleGoal.getBombardier());
-//            } else {
-//                bombardier = new PlayerStatTableData(key, singleGoal.getBombardier());
-//                playerInfo.put(singleGoal.getBombardier(), bombardier);
-//            }
-//
-//            if (StringUtils.hasText(singleGoal.getAssistant())) {
-//
-//                PlayerStatTableData assistant;
-//
-//                if (playerInfo.containsKey(singleGoal.getAssistant())) {
-//                    assistant = playerInfo.get(singleGoal.getAssistant());
-//                } else {
-//                    assistant = new PlayerStatTableData(key, singleGoal.getAssistant());
-//                    playerInfo.put(singleGoal.getAssistant(), bombardier);
-//                }
-//
-//                assistant.addAssist();
-//
-//            }
-//
-//            bombardier.addGoal();
-//
-//        }
-//
-//    }
 
     private static void fillTeamInfo(RosterType rosterType, RosterSingleGameInfo singleResult, Map<RosterType, RosterTypeGameStatistic> rosterStatistics, boolean isDraw, boolean isWinner) {
         RosterTypeGameStatistic tempRosterStat;

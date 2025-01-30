@@ -1,9 +1,10 @@
-package com.kononikhin.footballbot.bot.teamInfo;
+package com.kononikhin.footballbot.bot.selectors;
 
 import com.kononikhin.footballbot.bot.Utils;
 import com.kononikhin.footballbot.bot.constants.Goal;
 import com.kononikhin.footballbot.bot.constants.RosterType;
 import com.kononikhin.footballbot.bot.constants.Step;
+import com.kononikhin.footballbot.bot.teamInfo.GameSessionData;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;

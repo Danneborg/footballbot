@@ -1,10 +1,10 @@
 package com.kononikhin.footballbot.bot;
 
 import com.kononikhin.footballbot.bot.constants.Step;
-import com.kononikhin.footballbot.bot.teamInfo.GameResultSelector;
+import com.kononikhin.footballbot.bot.selectors.GameResultSelector;
 import com.kononikhin.footballbot.bot.teamInfo.GameSessionData;
-import com.kononikhin.footballbot.bot.teamInfo.GameSessionStatisticSelector;
-import com.kononikhin.footballbot.bot.teamInfo.PlayersSelector;
+import com.kononikhin.footballbot.bot.selectors.GameSessionStatisticSelector;
+import com.kononikhin.footballbot.bot.selectors.PlayersSelector;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -173,8 +173,10 @@ public class FootballBot extends TelegramLongPollingBot {
         } else if (Step.FINISH_A_GAME_DAY.equals(selectedStep)) {
 
             var tempGameData = userRosters.computeIfAbsent(chatId, s -> new GameSessionData(chatId, UUID.randomUUID(), LocalDateTime.now()));
-            messageToSend = statisticSelector.createMessage(chatId, incomingMessage, tempGameData, selectedStep, userCurrentStep);
+            messageToSend = statisticSelector.createMessage(chatId, tempGameData, userCurrentStep);
             messageToSend.setReplyMarkup(Utils.createKeyBoard(Step.DEFAULT_BUTTON));
+
+            //TODO тут сохранить всю сессию в базу
 
         } else {
 
