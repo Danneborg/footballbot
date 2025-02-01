@@ -1,35 +1,46 @@
 package com.kononikhin.footballbot.bot;
 
 import com.kononikhin.footballbot.bot.constants.Step;
+import com.kononikhin.footballbot.bot.dao.service.ChatService;
+import com.kononikhin.footballbot.bot.dao.service.ChatStepService;
+import com.kononikhin.footballbot.bot.dao.service.GameSessionService;
 import com.kononikhin.footballbot.bot.selectors.GameResultSelector;
-import com.kononikhin.footballbot.bot.teamInfo.GameSessionData;
 import com.kononikhin.footballbot.bot.selectors.GameSessionStatisticSelector;
 import com.kononikhin.footballbot.bot.selectors.PlayersSelector;
+import com.kononikhin.footballbot.bot.teamInfo.GameSessionData;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
+import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 
 @Component
 @Slf4j
-
+//TODO на старте приложения нужно создать бин, который будет грузить в inmemory хранилище все незаконченные игры и последние шаги пользователей
 public class FootballBot extends TelegramLongPollingBot {
 
     //TODO перенести игроков(ники из тг) в БД
     private final static Set<String> ALL_PLAYERS = Set.of("Player1", "Player2", "Player3", "Player4", "Player5", "Player6", "Player7", "Player8", "Player9", "Player10", "Player11", "Player12", "Player13", "Player14", "Player15", "Player16", "Player17", "Player18", "Player19", "Player20", "Player21", "Player22", "Player23");
 
+    @Autowired
+    private ChatService chatService;
+    @Autowired
+    private ChatStepService chatStepService;
+    @Autowired
+    private GameSessionService gameSessionService;
     @Autowired
     private GameResultSelector gameResultSelector;
     @Autowired
@@ -47,7 +58,7 @@ public class FootballBot extends TelegramLongPollingBot {
     private final Map<Long, SendMessage> userLastMessage = new ConcurrentHashMap<>();
     /**
      * TODO переместить это в БД
-     * Один пользак может одновременно иметь только один игровой день
+     * TODO Один пользак может одновременно иметь только один игровой день
      */
     private final Map<Long, GameSessionData> userRosters = new ConcurrentHashMap<>();
 
@@ -66,12 +77,6 @@ public class FootballBot extends TelegramLongPollingBot {
          */
 
         /**
-         TODO реализовать механизм запоминания текущего статуса процесса(шага) для конкретного пользака, чтобы не начинать всегда сначала
-         */
-        /**
-         TODO научиться рисовать клавиатуру в зависимости от доступных действий(кнопки, состав) на текущем шаге
-         */
-        /**
          * TODO протестировать такое, если отправить пользаку кнопки и потом остановить бота, запустить бота
          * и после этого пользак жмет кнопку, то сообщения нет, так как нет CallbackQuery, то нужно извратиться чтобы достать сообщение и команду
          * нужно протестировать такое решение
@@ -79,6 +84,18 @@ public class FootballBot extends TelegramLongPollingBot {
 
         Long chatId;
         String incomingMessage;
+
+        //TODO нужно научиться принимать сообщения из групповых чатов и реализовать логику обработки команд оттуда
+        if (update.getMessage() != null && !update.getMessage().getChat().getType().equals("private")) {
+
+            var warningMessage = SendMessage.builder()
+                    .chatId(update.getMessage().getChatId())
+                    .text("К сожалению, я еще не умею работать с типом чата" + update.getMessage().getChat().getType() + ", но скоро научусь!")
+                    .build();
+            sendMessage(warningMessage);
+
+            return;
+        }
 
         if (update.hasMessage() && update.getMessage().hasText()) {
 
@@ -103,8 +120,13 @@ public class FootballBot extends TelegramLongPollingBot {
         Step previousUserStep;
         Step selectedStep;
 
+        //TODO добавить сохранение объекта GameSessionData в БД, текущая логика с сохранением шагов в бд сломается,
+        // если остановить бота на середине процесса, произойдет коллапс, так как сохранится один из промежуточных шагов, а данных для работы не будет
         if (!userCurrentStep.containsKey(chatId)) {
-            previousUserStep = userCurrentStep.computeIfAbsent(chatId, s -> Step.START);
+            previousUserStep = userCurrentStep.computeIfAbsent(chatId, s -> {
+                chatService.checkOrCreateChat(chatId, update.getMessage().getChat().getType());
+                return chatStepService.getLastStep(chatId, incomingMessage);
+            });
             selectedStep = previousUserStep;
         } else {
             previousUserStep = userCurrentStep.get(chatId);
@@ -144,13 +166,12 @@ public class FootballBot extends TelegramLongPollingBot {
 
         } else if (Step.PLAYER_SELECTION_TRIGGERS.contains(selectedStep)) {
 
-            var tempGameData = userRosters.computeIfAbsent(chatId, s -> new GameSessionData(chatId, UUID.randomUUID(), LocalDateTime.now()));
+            var tempGameData = userRosters.computeIfAbsent(chatId, s -> gameSessionService.getUnfinishedGameSessionDataByChatId(chatId));
             messageToSend = playersSelector.createMessage(chatId, incomingMessage, tempGameData, selectedStep, ALL_PLAYERS, userCurrentStep);
 
         } else if (Step.TO_RESULT_SETTING.equals(selectedStep)) {
-
             //TODO добавить ошибку если руками была введена команда без набранных ростеров
-            var tempGameData = userRosters.computeIfAbsent(chatId, s -> new GameSessionData(chatId, UUID.randomUUID(), LocalDateTime.now()));
+            var tempGameData = userRosters.computeIfAbsent(chatId, s -> gameSessionService.getUnfinishedGameSessionDataByChatId(chatId));
             messageToSend = gameResultSelector.initiateSettingResults(chatId, tempGameData, selectedStep, userCurrentStep);
 
         } else if (Step.GAME_RESULT_SET_TRIGGERS.contains(selectedStep)) {
@@ -166,14 +187,14 @@ public class FootballBot extends TelegramLongPollingBot {
 
             } else {
                 //TODO добавить ошибку если руками была введена команда без набранных ростеров
-                var tempGameData = userRosters.computeIfAbsent(chatId, s -> new GameSessionData(chatId, UUID.randomUUID(), LocalDateTime.now()));
+                var tempGameData = userRosters.computeIfAbsent(chatId, s -> gameSessionService.getUnfinishedGameSessionDataByChatId(chatId));
                 messageToSend = gameResultSelector.setGameResult(chatId, incomingMessage, tempGameData, selectedStep, userCurrentStep, lastMessage);
             }
             //TODO ввести флаг, что текущая игровая сессия закончена и начинать новую, после отрабатывания этой кнопки, сейчас при старте новой сессии при завершении предыдущей, идут результаты из уже завершенной сессии
         } else if (Step.FINISH_A_GAME_DAY.equals(selectedStep)) {
 
-            var tempGameData = userRosters.computeIfAbsent(chatId, s -> new GameSessionData(chatId, UUID.randomUUID(), LocalDateTime.now()));
-            messageToSend = statisticSelector.createMessage(chatId, tempGameData, userCurrentStep);
+            var tempGameData = userRosters.computeIfAbsent(chatId, s -> gameSessionService.getUnfinishedGameSessionDataByChatId(chatId));
+            messageToSend = statisticSelector.createMessage(chatId, tempGameData, userCurrentStep, Step.FINISH_A_GAME_DAY.getConsoleCommand());
             messageToSend.setReplyMarkup(Utils.createKeyBoard(Step.DEFAULT_BUTTON));
 
             //TODO тут сохранить всю сессию в базу
@@ -182,7 +203,7 @@ public class FootballBot extends TelegramLongPollingBot {
 
             var nextStep = Step.getNextStep(selectedStep.getConsoleCommand());
             var keyboard = Utils.createKeyBoard(nextStep);
-            userCurrentStep.put(chatId, selectedStep);
+            chatStepService.addStep(userCurrentStep, chatId, selectedStep, incomingMessage);
             messageToSend = Utils.createMessage(chatId, keyboard, selectedStep);
 
         }
@@ -201,6 +222,25 @@ public class FootballBot extends TelegramLongPollingBot {
             execute(messageToSend);
         } catch (TelegramApiException e) {
             log.error("Ошибка отправки сообщения", e);
+        }
+    }
+
+    @Override
+    public void onRegister() {
+        super.onRegister();
+
+        // Регистрация команд
+        List<BotCommand> commands = new ArrayList<>();
+        commands.add(new BotCommand("/start", "Начать работу"));
+        commands.add(new BotCommand("/help", "Получить справку"));
+
+        SetMyCommands setMyCommands = new SetMyCommands();
+        setMyCommands.setCommands(commands);
+
+        try {
+            execute(setMyCommands); // Отправляем запрос Telegram API
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
         }
     }
 }

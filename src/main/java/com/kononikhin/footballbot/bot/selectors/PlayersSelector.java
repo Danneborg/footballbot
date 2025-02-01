@@ -3,7 +3,9 @@ package com.kononikhin.footballbot.bot.selectors;
 import com.kononikhin.footballbot.bot.Utils;
 import com.kononikhin.footballbot.bot.constants.RosterType;
 import com.kononikhin.footballbot.bot.constants.Step;
+import com.kononikhin.footballbot.bot.dao.service.ChatStepService;
 import com.kononikhin.footballbot.bot.teamInfo.GameSessionData;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -16,10 +18,13 @@ import java.util.Map;
 import java.util.Set;
 
 @Component
+@RequiredArgsConstructor
 public class PlayersSelector {
 
     private final static int MINIMUM_ROSTERS_TO_PLAY = 2;
+    private final ChatStepService chatStepService;
 
+    //TODO теряется история шагов когда пользак выбирает игроков в команду, нужно это поправить
     public SendMessage createMessage(Long chatId, String incomingMessage, GameSessionData gameSessionData,
                                      Step rosterToFill, Set<String> allPlayers, Map<Long, Step> userCurrentStep) {
         SendMessage messageToSend = new SendMessage();
@@ -58,15 +63,13 @@ public class PlayersSelector {
                                 "<i>Можно начинать играть или набрать еще 1 команду.</i>",
                         rosterToFill.getButtonText(), gameSessionData.getNumberOfFullRosters()));
 
-                userCurrentStep.put(chatId, rosterToFill);
-
+                chatStepService.addStep(userCurrentStep, chatId, rosterToFill, incomingMessage);
             } else {
 
                 var keyboard = Utils.createKeyBoard(gameSessionData.getNotFullRosters());
                 messageToSend.setReplyMarkup(keyboard);
                 messageToSend.setText(String.format("Состав для %s готов, выбери следующую команду :", rosterToFill.getButtonText()));
-                userCurrentStep.put(chatId, rosterToFill);
-
+                chatStepService.addStep(userCurrentStep, chatId, rosterToFill, incomingMessage);
             }
 
 

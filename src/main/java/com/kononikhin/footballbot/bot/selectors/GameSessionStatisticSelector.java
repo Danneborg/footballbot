@@ -5,6 +5,7 @@ import com.github.aneureka.exception.RowSizeMismatchException;
 import com.github.aneureka.util.PrettyTable;
 import com.kononikhin.footballbot.bot.constants.RosterType;
 import com.kononikhin.footballbot.bot.constants.Step;
+import com.kononikhin.footballbot.bot.dao.service.ChatStepService;
 import com.kononikhin.footballbot.bot.dto.MainTeamTable;
 import com.kononikhin.footballbot.bot.dto.PlayerStatTableData;
 import com.kononikhin.footballbot.bot.dto.RosterTypeGameStatistic;
@@ -13,6 +14,7 @@ import com.kononikhin.footballbot.bot.teamInfo.GameResult;
 import com.kononikhin.footballbot.bot.teamInfo.GameSessionData;
 import com.kononikhin.footballbot.bot.teamInfo.RosterSingleGameInfo;
 import com.kononikhin.footballbot.bot.teamInfo.SingleGoal;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -23,10 +25,13 @@ import java.util.*;
 import java.util.function.Consumer;
 
 @Component
+@RequiredArgsConstructor
 public class GameSessionStatisticSelector {
 
+    private final ChatStepService chatStepService;
+
     //TODO надо как-то написать на это тест, хз вообще как, но сделать
-    public SendMessage createMessage(Long chatId, GameSessionData tempGameData, Map<Long, Step> userCurrentStep) {
+    public SendMessage createMessage(Long chatId, GameSessionData tempGameData, Map<Long, Step> userCurrentStep, String lastMessage) {
         SendMessage messageToSend = new SendMessage();
         messageToSend.setChatId(chatId);
 
@@ -121,7 +126,7 @@ public class GameSessionStatisticSelector {
 
         messageToSend.setText(finalMessage);
         //TODO куда отправлять пользака?
-        userCurrentStep.put(chatId, Step.START);
+        chatStepService.addStep(userCurrentStep, chatId, Step.START, lastMessage);
         return messageToSend;
     }
 

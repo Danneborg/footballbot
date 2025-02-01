@@ -5,12 +5,16 @@ import com.kononikhin.footballbot.bot.Utils;
 import com.kononikhin.footballbot.bot.constants.Goal;
 import com.kononikhin.footballbot.bot.constants.RosterType;
 import com.kononikhin.footballbot.bot.constants.Step;
+import com.kononikhin.footballbot.bot.dao.service.ChatStepService;
 import com.kononikhin.footballbot.bot.selectors.GameResultSelector;
 import com.kononikhin.footballbot.bot.teamInfo.GameSessionData;
 import com.kononikhin.footballbot.bot.selectors.GameSessionStatisticSelector;
 import com.kononikhin.footballbot.bot.selectors.PlayersSelector;
 import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
@@ -18,6 +22,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.kononikhin.footballbot.bot.Utils.createMessage;
+import static org.mockito.ArgumentMatchers.*;
 
 
 @SpringBootTest
@@ -54,13 +59,17 @@ public class FootballBotApplicationTests {
     @Test
     public void testProcessGameSessionData() {
 
-        var gameResultSelector = new GameResultSelector();
+        var stepService = Mockito.mock(ChatStepService.class);
+        Mockito.doNothing().when(stepService).addStep(anyMap(), anyLong(), any(Step.class), anyString());
+        Mockito.when(stepService.getLastStep(Mockito.anyLong(), Mockito.anyString())).thenReturn(Step.START_NEVER_SPOKE);
+
+        var gameResultSelector = new GameResultSelector(stepService);
 
         var chatId = 1L;
 
-        var sessionData = new GameSessionData(chatId, UUID.randomUUID(), LocalDateTime.now());
+        var sessionData = new GameSessionData(chatId, 1L, UUID.randomUUID(), LocalDateTime.now());
 
-        var statisticSelector = new GameSessionStatisticSelector();
+        var statisticSelector = new GameSessionStatisticSelector(stepService);
 
 //        addPlayersToATeam(sessionData, RosterType.BLUE);
 //        assert sessionData.isRosterFull(RosterType.BLUE);
@@ -137,18 +146,21 @@ public class FootballBotApplicationTests {
         assert keyboardFinish.getKeyboard().get(0).size() == 3;
         assert keyboardFinish.getKeyboard().get(0).get(keyboardFinish.getKeyboard().get(0).size() -1).getCallbackData().equals("/finish_a_game_day");
 
-        var finalMessage = statisticSelector.createMessage(chatId, sessionData,  userCurrentStep);
+        var finalMessage = statisticSelector.createMessage(chatId, sessionData,  userCurrentStep, Step.FINISH_A_GAME_DAY.getConsoleCommand());
 
-        System.out.println();
     }
 
 
     @Test
     public void testAddNewRoster() {
 
+        var stepService = Mockito.mock(ChatStepService.class);
+        Mockito.doNothing().when(stepService).addStep(anyMap(), anyLong(), any(Step.class), anyString());
+        Mockito.when(stepService.getLastStep(Mockito.anyLong(), Mockito.anyString())).thenReturn(Step.START_NEVER_SPOKE);
+
         Long chatId = 1L;
-        var gameData = new GameSessionData(chatId, UUID.randomUUID(), LocalDateTime.now());
-        var playersSelector = new PlayersSelector();
+        var gameData = new GameSessionData(chatId, 1L, UUID.randomUUID(), LocalDateTime.now());
+        var playersSelector = new PlayersSelector(stepService);
         Map<Long, Step> userCurrentStep = new HashMap<>();
 
         var incomingMessage = Step.SELECT_RED_ROSTER.getConsoleCommand();

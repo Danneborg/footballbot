@@ -23,4 +23,12 @@ public class GameSession {
     private Boolean isFinished;
 
     // Getters and Setters
+
+    public static GameSession createNewSession(Long chatId) {
+        var newSession = new GameSession();
+        newSession.setChatId(chatId);
+        newSession.setStartDate(LocalDateTime.now());
+        return newSession;
+    }
+
 }

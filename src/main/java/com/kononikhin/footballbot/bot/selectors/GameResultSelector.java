@@ -4,7 +4,9 @@ import com.kononikhin.footballbot.bot.Utils;
 import com.kononikhin.footballbot.bot.constants.Goal;
 import com.kononikhin.footballbot.bot.constants.RosterType;
 import com.kononikhin.footballbot.bot.constants.Step;
+import com.kononikhin.footballbot.bot.dao.service.ChatStepService;
 import com.kononikhin.footballbot.bot.teamInfo.GameSessionData;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -16,7 +18,10 @@ import java.util.List;
 import java.util.Map;
 
 @Component
+@RequiredArgsConstructor
 public class GameResultSelector {
+
+    private final ChatStepService chatStepService;
 
     //Первый шаг перед внесением результатов, нужно отобразить все выбранные команды и кнопку закончить день
     public SendMessage initiateSettingResults(Long chatId, GameSessionData gameSessionData,
@@ -33,8 +38,7 @@ public class GameResultSelector {
 
         messageToSend.setReplyMarkup(keyboard);
         messageToSend.setText(Step.SET_A_SINGLE_RESULT.getStepDescription());
-        userCurrentStep.put(chatId, selectedStep);
-
+        chatStepService.addStep(userCurrentStep, chatId, selectedStep, selectedStep.getConsoleCommand());
         return messageToSend;
     }
 
@@ -56,7 +60,7 @@ public class GameResultSelector {
             var keyboard = createKeyBoard(Goal.SET_BOMBARDIER_OR_NO_GOAL, selectedStep);
 
             messageToSend.setReplyMarkup(keyboard);
-            userCurrentStep.put(chatId, selectedStep);
+            chatStepService.addStep(userCurrentStep, chatId, selectedStep, incomingMessage);
             messageToSend.setText(selectedStep.getStepDescription());
         } else if ((Step.GAME_RESULT_SET_TRIGGERS.contains(Step.fromConsoleCommand(params[0])) && tempGameResult.getResult().get(tempRosterType).isSingleGameScoreSet())) {
             System.err.print("TODO попадание сюда это ошибка, нужно понять как сюда попал пользак и вернуть его на предыдущий шаг, а лучше сделать невозможным попадание сюда");
@@ -88,8 +92,7 @@ public class GameResultSelector {
                 var keyboard = Utils.createKeyBoard(listSteps);
                 messageToSend.setReplyMarkup(keyboard);
 
-                userCurrentStep.put(chatId, selectedStep);
-
+                chatStepService.addStep(userCurrentStep, chatId, selectedStep, incomingMessage);
             }
             //Есть голы, нужно начать цикл внесения результатов
             else {
@@ -142,7 +145,7 @@ public class GameResultSelector {
                 var keyboard = createKeyBoard(new ArrayList<>(players), selectedStep, Goal.SET_ASSISTANT, true, false);
                 messageToSend.setReplyMarkup(keyboard);
                 messageToSend.setText(String.format("%s для команды : %s.\nИли укажи, что ассистента нет.", Goal.SET_ASSISTANT.getButtonText(), tempRosterType.getColour()));
-                userCurrentStep.put(chatId, selectedStep);
+                chatStepService.addStep(userCurrentStep, chatId, selectedStep, incomingMessage);
             } else if (Goal.SET_ASSISTANT.equals(goalCommand) || Goal.SET_NO_ASSISTANT.equals(goalCommand)) {
 
                 //TODO проверить работу
@@ -164,7 +167,7 @@ public class GameResultSelector {
                 var keyboard = createKeyBoard(Goal.SET_BOMBARDIER_OR_NO_GOAL, selectedStep);
 
                 messageToSend.setReplyMarkup(keyboard);
-                userCurrentStep.put(chatId, selectedStep);
+                chatStepService.addStep(userCurrentStep, chatId, selectedStep, incomingMessage);
                 messageToSend.setText(String.format("Гол для команды %s добавлен, всего голов %s.\nДобавь еще гол или выбери вторую команду",
                         tempRosterType.getColour(), tempGameResult.getNumberOfGoals(tempRosterType)));
 

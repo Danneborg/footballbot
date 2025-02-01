@@ -16,10 +16,14 @@ import java.util.stream.Collectors;
 public class GameSessionData {
 
     private final Long chatId;
+    private final Long gameSessionDataDbId;
     private final UUID uuid;
     @Getter
     private final LocalDateTime sessionDateStart;
     private LocalDateTime sessionDateEnd;
+    //TODO добавить проверку на то, что в указанном личном чате уже начата игровая сессия и ее нельзя начать заново, учитывая,
+    // то что сейчас есть механика только для приватных чатов,
+    // то нужно просто сохранять текущую активную сессию со всеми потрохами и доставать ее из бд, если они не загружена
     private boolean isFinished = false;
 
     @Getter

@@ -1,0 +1,3 @@
+ALTER TABLE chat
+    ADD COLUMN chat_type VARCHAR(50) NOT NULL;
+
