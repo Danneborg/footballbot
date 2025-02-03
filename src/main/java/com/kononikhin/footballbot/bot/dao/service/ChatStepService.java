@@ -6,7 +6,7 @@ import java.util.Map;
 
 public interface ChatStepService {
 
-    Step getLastStep(Long tgChatId, String command);
+    Step getLastStep(Long tgChatId, String command, Long gameSessionId);
 
-    void addStep(Map<Long, Step> usersToStep, Long tgChatId, Step step, String consoleCommand);
+    void addStep(Map<Long, Step> usersToStep, Long tgChatId, Step step, String consoleCommand, Long gameSessionId);
 }

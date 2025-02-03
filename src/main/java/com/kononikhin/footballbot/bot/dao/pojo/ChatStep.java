@@ -29,12 +29,15 @@ public class ChatStep {
     @JoinColumn(name = "tgChatId", referencedColumnName = "tgChatId", nullable = false, insertable = false, updatable = false)
     private Chat chat;
 
-    public static ChatStep createNewChatStep(Long tgChatId, String command, LocalDateTime stepTime, boolean isLast) {
+    private Long gameSessionId;
+
+    public static ChatStep createNewChatStep(Long tgChatId, String command, LocalDateTime stepTime, boolean isLast, Long gameSessionId) {
         var newStep = new ChatStep();
         newStep.setTgChatId(tgChatId);
         newStep.setCommand(command);
         newStep.setStepTime(stepTime);
         newStep.setIsLast(isLast);
+        newStep.setGameSessionId(gameSessionId);
         return newStep;
     }
 }

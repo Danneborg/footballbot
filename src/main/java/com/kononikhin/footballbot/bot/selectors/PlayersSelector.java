@@ -3,6 +3,10 @@ package com.kononikhin.footballbot.bot.selectors;
 import com.kononikhin.footballbot.bot.Utils;
 import com.kononikhin.footballbot.bot.constants.RosterType;
 import com.kononikhin.footballbot.bot.constants.Step;
+import com.kononikhin.footballbot.bot.dao.pojo.PlayerInfoToChat;
+import com.kononikhin.footballbot.bot.dao.repo.AdminInChatRepository;
+import com.kononikhin.footballbot.bot.dao.repo.PlayerInfoRepository;
+import com.kononikhin.footballbot.bot.dao.repo.PlayerInfoToChatRepository;
 import com.kononikhin.footballbot.bot.dao.service.ChatStepService;
 import com.kononikhin.footballbot.bot.teamInfo.GameSessionData;
 import lombok.RequiredArgsConstructor;
@@ -12,10 +16,8 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -23,10 +25,19 @@ public class PlayersSelector {
 
     private final static int MINIMUM_ROSTERS_TO_PLAY = 2;
     private final ChatStepService chatStepService;
+    private final AdminInChatRepository adminInChatRepository;
+    private final PlayerInfoToChatRepository playerInfoToChatRepository;
+    private final PlayerInfoRepository playerInfoRepository;
 
     //TODO теряется история шагов когда пользак выбирает игроков в команду, нужно это поправить
     public SendMessage createMessage(Long chatId, String incomingMessage, GameSessionData gameSessionData,
-                                     Step rosterToFill, Set<String> allPlayers, Map<Long, Step> userCurrentStep) {
+                                     Step rosterToFill, Map<Long, Step> userCurrentStep) {
+
+        //TODO не грузятся игроки из привязанного чата
+        if (!gameSessionData.isPlayersLoaded()) {
+            loadPlayers(gameSessionData);
+        }
+
         SendMessage messageToSend = new SendMessage();
         messageToSend.setChatId(chatId);
 
@@ -63,19 +74,17 @@ public class PlayersSelector {
                                 "<i>Можно начинать играть или набрать еще 1 команду.</i>",
                         rosterToFill.getButtonText(), gameSessionData.getNumberOfFullRosters()));
 
-                chatStepService.addStep(userCurrentStep, chatId, rosterToFill, incomingMessage);
             } else {
 
                 var keyboard = Utils.createKeyBoard(gameSessionData.getNotFullRosters());
                 messageToSend.setReplyMarkup(keyboard);
                 messageToSend.setText(String.format("Состав для %s готов, выбери следующую команду :", rosterToFill.getButtonText()));
-                chatStepService.addStep(userCurrentStep, chatId, rosterToFill, incomingMessage);
             }
 
 
         } else {
 
-            var playersToSelect = gameSessionData.getNotSelectedPlayers(allPlayers);
+            var playersToSelect = gameSessionData.getNotSelectedPlayers(gameSessionData.getLoadedPlayers());
             var keyboard = createKeyBoard(new ArrayList<>(playersToSelect), rosterToFill);
             messageToSend.setReplyMarkup(keyboard);
 
@@ -87,7 +96,7 @@ public class PlayersSelector {
 
         }
 
-
+        chatStepService.addStep(userCurrentStep, chatId, rosterToFill, incomingMessage, gameSessionData.getGameSessionDataDbId());
         return messageToSend;
     }
 
@@ -132,5 +141,27 @@ public class PlayersSelector {
         markupInline.setKeyboard(rowsInline);
 
         return markupInline;
+    }
+
+    private void loadPlayers(GameSessionData gameSessionData) {
+
+        var admin = adminInChatRepository.findAdminInChatByTgChatUserId(gameSessionData.getChatId());
+
+        //TODO очень плохая ошибка, вернуть на старт, убрать админство, понять как воспроизвести
+        if (admin == null) {
+            return;
+        }
+
+        //TODO может быть больше 1, но это будет позже
+
+        //TODO добавить проверку, что игроки вообще есть
+        var playerIds = playerInfoToChatRepository.findByChatId(admin.getTgGroupChatId())
+                .stream().map(PlayerInfoToChat::getId)
+                .collect(Collectors.toList());
+
+        gameSessionData
+                .setListOfPlayers(new HashSet<>(playerInfoRepository.findByIdIn(playerIds)));
+
+        gameSessionData.setPlayersLoaded(true);
     }
 }

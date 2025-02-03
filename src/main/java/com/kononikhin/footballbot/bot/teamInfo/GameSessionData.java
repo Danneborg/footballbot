@@ -2,6 +2,7 @@ package com.kononikhin.footballbot.bot.teamInfo;
 
 import com.kononikhin.footballbot.bot.constants.RosterType;
 import com.kononikhin.footballbot.bot.constants.Step;
+import com.kononikhin.footballbot.bot.dao.pojo.PlayerInfo;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.CollectionUtils;
@@ -25,6 +26,8 @@ public class GameSessionData {
     // то что сейчас есть механика только для приватных чатов,
     // то нужно просто сохранять текущую активную сессию со всеми потрохами и доставать ее из бд, если они не загружена
     private boolean isFinished = false;
+    private boolean playersLoaded = false;
+    private Set<PlayerInfo> loadedPlayers = new HashSet<>();
 
     @Getter
     private final List<GameResult> gameResults = new ArrayList<>();
@@ -100,8 +103,10 @@ public class GameSessionData {
         rostersWithPlayers.get(rosterType).addPlayer(playerName);
     }
 
-    public Set<String> getNotSelectedPlayers(Set<String> allPlayers) {
-        var difference = new HashSet<>(allPlayers);
+    public Set<String> getNotSelectedPlayers(Set<PlayerInfo> allPlayers) {
+        var difference = allPlayers.stream()
+                .map(PlayerInfo::getTgName)
+                .collect(Collectors.toSet());
         var selectedPlayers = rostersWithPlayers.values().stream()
                 .flatMap(e -> e.getSelectedPlayers().stream())
                 .collect(Collectors.toSet());
@@ -139,7 +144,35 @@ public class GameSessionData {
         return new HashSet<>(rostersWithPlayers.get(rosterType).getSelectedPlayers());
     }
 
-    public void setFinished(){
+    public void setFinished() {
         isFinished = true;
+    }
+
+    public Long getGameSessionDataDbId() {
+        return gameSessionDataDbId;
+    }
+
+    public Long getChatId() {
+        return chatId;
+    }
+
+    public void setListOfPlayers(Set<PlayerInfo> listOfPlayers) {
+        this.loadedPlayers = new HashSet<>(listOfPlayers);
+    }
+
+    public boolean isPlayersLoaded() {
+        return playersLoaded;
+    }
+
+    public void setPlayersLoaded(boolean playersLoaded) {
+        this.playersLoaded = playersLoaded;
+    }
+
+    public Set<PlayerInfo> getLoadedPlayers() {
+        return loadedPlayers;
+    }
+
+    public void setLoadedPlayers(Set<PlayerInfo> loadedPlayers) {
+        this.loadedPlayers = loadedPlayers;
     }
 }

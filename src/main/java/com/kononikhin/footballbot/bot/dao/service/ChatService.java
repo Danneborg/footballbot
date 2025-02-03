@@ -1,7 +1,9 @@
 package com.kononikhin.footballbot.bot.dao.service;
 
+import org.telegram.telegrambots.meta.api.objects.Update;
+
 public interface ChatService {
 
-    Long checkOrCreateChat(Long chatId, String chatType);
+    boolean checkOrCreateChat(Long chatId, Update update);
 
 }

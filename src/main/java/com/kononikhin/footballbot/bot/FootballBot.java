@@ -88,11 +88,16 @@ public class FootballBot extends TelegramLongPollingBot {
         //TODO нужно научиться принимать сообщения из групповых чатов и реализовать логику обработки команд оттуда
         if (update.getMessage() != null && !update.getMessage().getChat().getType().equals("private")) {
 
-            var warningMessage = SendMessage.builder()
-                    .chatId(update.getMessage().getChatId())
-                    .text("К сожалению, я еще не умею работать с типом чата" + update.getMessage().getChat().getType() + ", но скоро научусь!")
-                    .build();
-            sendMessage(warningMessage);
+            var isNewChat = chatService.checkOrCreateChat(update.getMessage().getChatId(), update);
+
+            if (isNewChat) {
+                var warningMessage = SendMessage.builder()
+                        .chatId(update.getMessage().getChatId())
+                        .text("К сожалению, я еще не умею работать с типом чата" + update.getMessage().getChat().getType() + ", но скоро научусь!")
+                        .build();
+
+                sendMessage(warningMessage);
+            }
 
             return;
         }
@@ -124,8 +129,8 @@ public class FootballBot extends TelegramLongPollingBot {
         // если остановить бота на середине процесса, произойдет коллапс, так как сохранится один из промежуточных шагов, а данных для работы не будет
         if (!userCurrentStep.containsKey(chatId)) {
             previousUserStep = userCurrentStep.computeIfAbsent(chatId, s -> {
-                chatService.checkOrCreateChat(chatId, update.getMessage().getChat().getType());
-                return chatStepService.getLastStep(chatId, incomingMessage);
+                chatService.checkOrCreateChat(chatId, update);
+                return chatStepService.getLastStep(chatId, incomingMessage, null);
             });
             selectedStep = previousUserStep;
         } else {
@@ -167,7 +172,7 @@ public class FootballBot extends TelegramLongPollingBot {
         } else if (Step.PLAYER_SELECTION_TRIGGERS.contains(selectedStep)) {
 
             var tempGameData = userRosters.computeIfAbsent(chatId, s -> gameSessionService.getUnfinishedGameSessionDataByChatId(chatId));
-            messageToSend = playersSelector.createMessage(chatId, incomingMessage, tempGameData, selectedStep, ALL_PLAYERS, userCurrentStep);
+            messageToSend = playersSelector.createMessage(chatId, incomingMessage, tempGameData, selectedStep, userCurrentStep);
 
         } else if (Step.TO_RESULT_SETTING.equals(selectedStep)) {
             //TODO добавить ошибку если руками была введена команда без набранных ростеров
@@ -200,10 +205,11 @@ public class FootballBot extends TelegramLongPollingBot {
             //TODO тут сохранить всю сессию в базу
 
         } else {
-
+            //TODO надо отделить начало игрового дня от первых команд в чате, чтобы не создавать новые игровые сессии, игровая сессия создается ТОЛЬКО при нажатии Начать игровой день
             var nextStep = Step.getNextStep(selectedStep.getConsoleCommand());
             var keyboard = Utils.createKeyBoard(nextStep);
-            chatStepService.addStep(userCurrentStep, chatId, selectedStep, incomingMessage);
+            userRosters.computeIfAbsent(chatId, s -> gameSessionService.getUnfinishedGameSessionDataByChatId(chatId));
+            chatStepService.addStep(userCurrentStep, chatId, selectedStep, incomingMessage, userRosters.get(chatId).getGameSessionDataDbId());
             messageToSend = Utils.createMessage(chatId, keyboard, selectedStep);
 
         }

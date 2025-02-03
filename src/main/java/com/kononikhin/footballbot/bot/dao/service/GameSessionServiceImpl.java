@@ -24,6 +24,8 @@ public class GameSessionServiceImpl implements GameSessionService {
 
             var newSession = GameSession.createNewSession(chatId);
 
+            gameSessionRepository.save(newSession);
+
             return new GameSessionData(chatId, newSession.getId(), UUID.randomUUID(), newSession.getStartDate());
         }
 
@@ -33,7 +35,17 @@ public class GameSessionServiceImpl implements GameSessionService {
         return restoreGameSessionData(chatId);
     }
 
+    @Override
+    public void finishGameSession(Long gameSessionDataDbId) {
+        gameSessionRepository.setIsFinished(gameSessionDataDbId, true);
+    }
+
     private GameSessionData restoreGameSessionData(Long chatId) {
         return null;
+    }
+
+    @Override
+    public void saveGameSessionData(Long chatId, GameSessionData tempGameData) {
+
     }
 }

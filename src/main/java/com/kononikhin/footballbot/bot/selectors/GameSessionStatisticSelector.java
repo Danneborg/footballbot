@@ -5,7 +5,9 @@ import com.github.aneureka.exception.RowSizeMismatchException;
 import com.github.aneureka.util.PrettyTable;
 import com.kononikhin.footballbot.bot.constants.RosterType;
 import com.kononikhin.footballbot.bot.constants.Step;
+import com.kononikhin.footballbot.bot.dao.pojo.GameSession;
 import com.kononikhin.footballbot.bot.dao.service.ChatStepService;
+import com.kononikhin.footballbot.bot.dao.service.GameSessionService;
 import com.kononikhin.footballbot.bot.dto.MainTeamTable;
 import com.kononikhin.footballbot.bot.dto.PlayerStatTableData;
 import com.kononikhin.footballbot.bot.dto.RosterTypeGameStatistic;
@@ -29,6 +31,7 @@ import java.util.function.Consumer;
 public class GameSessionStatisticSelector {
 
     private final ChatStepService chatStepService;
+    private final GameSessionService gameSessionService;
 
     //TODO надо как-то написать на это тест, хз вообще как, но сделать
     public SendMessage createMessage(Long chatId, GameSessionData tempGameData, Map<Long, Step> userCurrentStep, String lastMessage) {
@@ -57,8 +60,7 @@ public class GameSessionStatisticSelector {
         messageToSend.setParseMode(ParseMode.HTML);
         String finalMessage = "";
 
-        //TODO сделать нормальный формат даты hh:mm DD.MM.YYYY
-        //TODO написать тест, сейчас считается неправильно считается общее количество сыгранных матчей, оно должно быть попарно завершенным играм
+        //TODO сделать нормальный формат даты DD.MM.YYYY hh:mm
         finalMessage += String.format("Дата игры : %s .Всего сыгранно игр : %s\n", tempGameData.getSessionDateStart(), totalGamesPlayed);
         finalMessage += "Итоговая таблица по результатам игры\n";
 
@@ -126,7 +128,9 @@ public class GameSessionStatisticSelector {
 
         messageToSend.setText(finalMessage);
         //TODO куда отправлять пользака?
-        chatStepService.addStep(userCurrentStep, chatId, Step.START, lastMessage);
+        tempGameData.setFinished();
+        gameSessionService.finishGameSession(tempGameData.getGameSessionDataDbId());
+        chatStepService.addStep(userCurrentStep, chatId, Step.START, lastMessage, tempGameData.getGameSessionDataDbId());
         return messageToSend;
     }
 
@@ -207,4 +211,10 @@ public class GameSessionStatisticSelector {
      "</pre>");
      *
      */
+
+    private void saveDataToDb(Long chatId, GameSessionData tempGameData){
+
+
+
+    }
 }

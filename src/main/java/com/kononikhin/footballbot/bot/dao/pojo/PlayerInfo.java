@@ -16,4 +16,10 @@ public class PlayerInfo {
     private String tgVisibleName;
 
     // Getters and Setters
+
+    public static PlayerInfo getNewPlayer(String tgName) {
+        PlayerInfo newPlayer = new PlayerInfo();
+        newPlayer.setTgName(tgName);
+        return newPlayer;
+    }
 }

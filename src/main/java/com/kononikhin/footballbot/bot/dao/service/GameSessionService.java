@@ -7,4 +7,7 @@ public interface GameSessionService {
 
     GameSessionData getUnfinishedGameSessionDataByChatId(Long chatId);
 
+    void finishGameSession(Long gameSessionDataDbId);
+
+    void saveGameSessionData(Long chatId, GameSessionData tempGameData);
 }
