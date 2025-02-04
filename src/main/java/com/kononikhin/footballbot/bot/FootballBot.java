@@ -5,6 +5,7 @@ import com.kononikhin.footballbot.bot.dao.service.ChatService;
 import com.kononikhin.footballbot.bot.dao.service.ChatStepService;
 import com.kononikhin.footballbot.bot.dao.service.GameSessionService;
 import com.kononikhin.footballbot.bot.selectors.GameResultSelector;
+import com.kononikhin.footballbot.bot.selectors.GameSessionDataSelector;
 import com.kononikhin.footballbot.bot.selectors.GameSessionStatisticSelector;
 import com.kononikhin.footballbot.bot.selectors.PlayersSelector;
 import com.kononikhin.footballbot.bot.teamInfo.GameSessionData;
@@ -20,10 +21,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 
@@ -47,6 +45,8 @@ public class FootballBot extends TelegramLongPollingBot {
     private PlayersSelector playersSelector;
     @Autowired
     private GameSessionStatisticSelector statisticSelector;
+    @Autowired
+    private GameSessionDataSelector gameSessionDataSelector;
 
     /**
      * TODO переместить это в БД
@@ -171,12 +171,12 @@ public class FootballBot extends TelegramLongPollingBot {
 
         } else if (Step.PLAYER_SELECTION_TRIGGERS.contains(selectedStep)) {
 
-            var tempGameData = userRosters.computeIfAbsent(chatId, s -> gameSessionService.getUnfinishedGameSessionDataByChatId(chatId));
+            var tempGameData = userRosters.get(chatId);
             messageToSend = playersSelector.createMessage(chatId, incomingMessage, tempGameData, selectedStep, userCurrentStep);
 
         } else if (Step.TO_RESULT_SETTING.equals(selectedStep)) {
             //TODO добавить ошибку если руками была введена команда без набранных ростеров
-            var tempGameData = userRosters.computeIfAbsent(chatId, s -> gameSessionService.getUnfinishedGameSessionDataByChatId(chatId));
+            var tempGameData = userRosters.get(chatId);
             messageToSend = gameResultSelector.initiateSettingResults(chatId, tempGameData, selectedStep, userCurrentStep);
 
         } else if (Step.GAME_RESULT_SET_TRIGGERS.contains(selectedStep)) {
@@ -192,28 +192,32 @@ public class FootballBot extends TelegramLongPollingBot {
 
             } else {
                 //TODO добавить ошибку если руками была введена команда без набранных ростеров
-                var tempGameData = userRosters.computeIfAbsent(chatId, s -> gameSessionService.getUnfinishedGameSessionDataByChatId(chatId));
+                var tempGameData = userRosters.get(chatId);
                 messageToSend = gameResultSelector.setGameResult(chatId, incomingMessage, tempGameData, selectedStep, userCurrentStep, lastMessage);
             }
             //TODO ввести флаг, что текущая игровая сессия закончена и начинать новую, после отрабатывания этой кнопки, сейчас при старте новой сессии при завершении предыдущей, идут результаты из уже завершенной сессии
         } else if (Step.FINISH_A_GAME_DAY.equals(selectedStep)) {
 
-            var tempGameData = userRosters.computeIfAbsent(chatId, s -> gameSessionService.getUnfinishedGameSessionDataByChatId(chatId));
+            var tempGameData = userRosters.get(chatId);
             messageToSend = statisticSelector.createMessage(chatId, tempGameData, userCurrentStep, Step.FINISH_A_GAME_DAY.getConsoleCommand());
             messageToSend.setReplyMarkup(Utils.createKeyBoard(Step.DEFAULT_BUTTON));
-
+            userRosters.remove(chatId);
             //TODO тут сохранить всю сессию в базу
+            gameSessionService.saveGameSessionData(chatId, tempGameData);
+        } else if (Step.START_GAME_DAY.equals(selectedStep)) {
+            messageToSend = gameSessionDataSelector.createMessage(chatId, incomingMessage, userCurrentStep.get(chatId), userRosters);
 
         } else {
             //TODO надо отделить начало игрового дня от первых команд в чате, чтобы не создавать новые игровые сессии, игровая сессия создается ТОЛЬКО при нажатии Начать игровой день
             var nextStep = Step.getNextStep(selectedStep.getConsoleCommand());
             var keyboard = Utils.createKeyBoard(nextStep);
-            userRosters.computeIfAbsent(chatId, s -> gameSessionService.getUnfinishedGameSessionDataByChatId(chatId));
-            chatStepService.addStep(userCurrentStep, chatId, selectedStep, incomingMessage, userRosters.get(chatId).getGameSessionDataDbId());
             messageToSend = Utils.createMessage(chatId, keyboard, selectedStep);
-
         }
 
+        var gameSessionDataId = Optional.ofNullable(userRosters.get(chatId))
+                .map(GameSessionData::getGameSessionDataDbId)
+                .orElse(null);
+        chatStepService.addStep(userCurrentStep, chatId, selectedStep, incomingMessage, gameSessionDataId);
         userLastMessage.put(chatId, messageToSend);
         sendMessage(messageToSend);
     }
@@ -239,6 +243,7 @@ public class FootballBot extends TelegramLongPollingBot {
         List<BotCommand> commands = new ArrayList<>();
         commands.add(new BotCommand("/start", "Начать работу"));
         commands.add(new BotCommand("/help", "Получить справку"));
+        commands.add(new BotCommand("/reset", "Прервать текущий процесс и вернуться"));
 
         SetMyCommands setMyCommands = new SetMyCommands();
         setMyCommands.setCommands(commands);

@@ -12,5 +12,5 @@ public interface PlayerInfoToChatRepository extends JpaRepository<PlayerInfoToCh
 
     List<PlayerInfoToChat> findByChat(Chat chat);
 
-    List<PlayerInfoToChat> findByChatId(Long chatId);
+    List<PlayerInfoToChat> findByChatTgChatId(Long tgChatId);
 }

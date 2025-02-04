@@ -129,8 +129,7 @@ public class GameSessionStatisticSelector {
         messageToSend.setText(finalMessage);
         //TODO куда отправлять пользака?
         tempGameData.setFinished();
-        gameSessionService.finishGameSession(tempGameData.getGameSessionDataDbId());
-        chatStepService.addStep(userCurrentStep, chatId, Step.START, lastMessage, tempGameData.getGameSessionDataDbId());
+
         return messageToSend;
     }
 

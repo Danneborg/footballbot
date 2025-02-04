@@ -28,6 +28,7 @@ public class GameSession {
         var newSession = new GameSession();
         newSession.setChatId(chatId);
         newSession.setStartDate(LocalDateTime.now());
+        newSession.setIsFinished(false);
         return newSession;
     }
 

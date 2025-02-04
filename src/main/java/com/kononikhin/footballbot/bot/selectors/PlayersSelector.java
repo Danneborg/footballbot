@@ -11,6 +11,7 @@ import com.kononikhin.footballbot.bot.dao.service.ChatStepService;
 import com.kononikhin.footballbot.bot.teamInfo.GameSessionData;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -29,7 +30,7 @@ public class PlayersSelector {
     private final PlayerInfoToChatRepository playerInfoToChatRepository;
     private final PlayerInfoRepository playerInfoRepository;
 
-    //TODO теряется история шагов когда пользак выбирает игроков в команду, нужно это поправить
+
     public SendMessage createMessage(Long chatId, String incomingMessage, GameSessionData gameSessionData,
                                      Step rosterToFill, Map<Long, Step> userCurrentStep) {
 
@@ -54,7 +55,7 @@ public class PlayersSelector {
         //Если нет 2ого параметра в виде имени игрока, значит пользак нажал на кнопку первый раз
         if (params.length > 1) {
             var playerName = params[1];
-            gameSessionData.addPlayerToRoster(rosterType, playerName);
+            gameSessionData.addPlayerToRoster(rosterType, playerName, gameSessionData.getPlayerInfoByTgName(playerName));
         }
 
         var isTempRosterToFillFull = gameSessionData.isRosterFull(rosterType);
@@ -96,7 +97,6 @@ public class PlayersSelector {
 
         }
 
-        chatStepService.addStep(userCurrentStep, chatId, rosterToFill, incomingMessage, gameSessionData.getGameSessionDataDbId());
         return messageToSend;
     }
 
@@ -155,9 +155,14 @@ public class PlayersSelector {
         //TODO может быть больше 1, но это будет позже
 
         //TODO добавить проверку, что игроки вообще есть
-        var playerIds = playerInfoToChatRepository.findByChatId(admin.getTgGroupChatId())
+        var playerIds = playerInfoToChatRepository.findByChatTgChatId(admin.getTgGroupChatId())
                 .stream().map(PlayerInfoToChat::getId)
                 .collect(Collectors.toList());
+
+        //TODO что-то сделать с тем случаем, когда игроков нет, идеально не пустить админа сюда, так как не набрался состав
+        if(CollectionUtils.isEmpty(playerIds)) {
+            return;
+        }
 
         gameSessionData
                 .setListOfPlayers(new HashSet<>(playerInfoRepository.findByIdIn(playerIds)));

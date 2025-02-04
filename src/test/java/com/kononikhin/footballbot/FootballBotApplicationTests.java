@@ -56,7 +56,7 @@ public class FootballBotApplicationTests {
         var notSelectedPlayers = new ArrayList<>(gameSessionData.getNotSelectedPlayers(ALL_PLAYERS_NEW));
 
         for (int i = 0; i < GameSessionData.ROSTER_SIZE; i++) {
-            gameSessionData.addPlayerToRoster(rosterType, notSelectedPlayers.get(i));
+            gameSessionData.addPlayerToRoster(rosterType, notSelectedPlayers.get(i), gameSessionData.getPlayerInfoByTgName(notSelectedPlayers.get(i)));
         }
 
     }

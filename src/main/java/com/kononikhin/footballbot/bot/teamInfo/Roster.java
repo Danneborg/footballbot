@@ -1,6 +1,7 @@
 package com.kononikhin.footballbot.bot.teamInfo;
 
 import com.kononikhin.footballbot.bot.constants.RosterType;
+import com.kononikhin.footballbot.bot.dao.pojo.PlayerInfo;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -24,9 +25,9 @@ public class Roster {
         this.rosterType = rosterType;
     }
 
-    public void addPlayer(String playerName) {
+    public void addPlayer(String playerName, PlayerInfo playerInfo) {
         selectedPlayers.add(playerName);
-
+        selectedPlayersDto.add(playerInfo);
         if (selectedPlayers.size() == GameSessionData.ROSTER_SIZE) {
             isRosterFull = true;
         }

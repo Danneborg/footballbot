@@ -14,8 +14,8 @@ public class PlayerInfoToChat {
     @JoinColumn(name = "player_id", nullable = false)
     private PlayerInfo player;
 
-    @ManyToOne
-    @JoinColumn(name = "chat_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tgChatId", referencedColumnName = "tgChatId", nullable = false, insertable = false, updatable = false)
     private Chat chat;
 
 }

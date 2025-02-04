@@ -28,6 +28,7 @@ public class GameSessionData {
     private boolean isFinished = false;
     private boolean playersLoaded = false;
     private Set<PlayerInfo> loadedPlayers = new HashSet<>();
+    private Map<String, PlayerInfo> loadedPlayersToTgNames = new HashMap<>();
 
     @Getter
     private final List<GameResult> gameResults = new ArrayList<>();
@@ -99,8 +100,8 @@ public class GameSessionData {
         rostersWithPlayers.computeIfAbsent(rosterType, e -> new Roster(rosterType));
     }
 
-    public void addPlayerToRoster(RosterType rosterType, String playerName) {
-        rostersWithPlayers.get(rosterType).addPlayer(playerName);
+    public void addPlayerToRoster(RosterType rosterType, String playerName, PlayerInfo playerInfo) {
+        rostersWithPlayers.get(rosterType).addPlayer(playerName, playerInfo);
     }
 
     public Set<String> getNotSelectedPlayers(Set<PlayerInfo> allPlayers) {
@@ -158,6 +159,7 @@ public class GameSessionData {
 
     public void setListOfPlayers(Set<PlayerInfo> listOfPlayers) {
         this.loadedPlayers = new HashSet<>(listOfPlayers);
+        loadedPlayersToTgNames = loadedPlayers.stream().collect(Collectors.toMap(PlayerInfo::getTgName, e -> e));
     }
 
     public boolean isPlayersLoaded() {
@@ -174,5 +176,10 @@ public class GameSessionData {
 
     public void setLoadedPlayers(Set<PlayerInfo> loadedPlayers) {
         this.loadedPlayers = loadedPlayers;
+        loadedPlayersToTgNames = loadedPlayers.stream().collect(Collectors.toMap(PlayerInfo::getTgName, e -> e));
+    }
+
+    public PlayerInfo getPlayerInfoByTgName(String playerName) {
+        return loadedPlayersToTgNames.get(playerName);
     }
 }

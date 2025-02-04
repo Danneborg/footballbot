@@ -44,9 +44,9 @@ public enum Step {
     private final String stepDescription;
 
 
+    public static final List<Step> BUTTON_START_LIST = List.of(START_GAME_DAY, GET_COMMON_STAT, SHOW_HELP);
     public static final List<Step> DEFAULT_BUTTON = List.of(START);
-    private static final List<Step> BUTTON_START_LIST = List.of(START_GAME_DAY, GET_COMMON_STAT, SHOW_HELP);
-    private static final List<Step> ROSTERS = List.of(SELECT_RED_ROSTER, SELECT_GREEN_ROSTER, SELECT_BLUE_ROSTER, SELECT_NAKED_ROSTER);
+    public static final List<Step> ROSTERS = List.of(SELECT_RED_ROSTER, SELECT_GREEN_ROSTER, SELECT_BLUE_ROSTER, SELECT_NAKED_ROSTER);
     private static final Map<String, Step> commandMap = new HashMap<>();
     public static final List<Step> PLAYER_SELECTION_TRIGGERS = List.of(SELECT_RED_ROSTER, SELECT_GREEN_ROSTER, SELECT_BLUE_ROSTER, SELECT_NAKED_ROSTER);
     public static final List<Step> GAME_RESULT_SET_TRIGGERS = List.of(SET_RED_ROSTER_RESULT, SET_GREEN_ROSTER_RESULT, SET_BLUE_ROSTER_RESULT, SET_NAKED_ROSTER_RESULT);

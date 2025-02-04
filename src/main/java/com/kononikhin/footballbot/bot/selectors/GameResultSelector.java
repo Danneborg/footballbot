@@ -38,7 +38,6 @@ public class GameResultSelector {
 
         messageToSend.setReplyMarkup(keyboard);
         messageToSend.setText(Step.SET_A_SINGLE_RESULT.getStepDescription());
-        chatStepService.addStep(userCurrentStep, chatId, selectedStep, selectedStep.getConsoleCommand(), gameSessionData.getGameSessionDataDbId());
         return messageToSend;
     }
 
@@ -60,7 +59,6 @@ public class GameResultSelector {
             var keyboard = createKeyBoard(Goal.SET_BOMBARDIER_OR_NO_GOAL, selectedStep);
 
             messageToSend.setReplyMarkup(keyboard);
-            chatStepService.addStep(userCurrentStep, chatId, selectedStep, incomingMessage, gameSessionData.getGameSessionDataDbId());
             messageToSend.setText(selectedStep.getStepDescription());
         } else if ((Step.GAME_RESULT_SET_TRIGGERS.contains(Step.fromConsoleCommand(params[0])) && tempGameResult.getResult().get(tempRosterType).isSingleGameScoreSet())) {
             System.err.print("TODO попадание сюда это ошибка, нужно понять как сюда попал пользак и вернуть его на предыдущий шаг, а лучше сделать невозможным попадание сюда");
@@ -92,7 +90,6 @@ public class GameResultSelector {
                 var keyboard = Utils.createKeyBoard(listSteps);
                 messageToSend.setReplyMarkup(keyboard);
 
-                chatStepService.addStep(userCurrentStep, chatId, selectedStep, incomingMessage, gameSessionData.getGameSessionDataDbId());
             }
             //Есть голы, нужно начать цикл внесения результатов
             else {
@@ -145,7 +142,6 @@ public class GameResultSelector {
                 var keyboard = createKeyBoard(new ArrayList<>(players), selectedStep, Goal.SET_ASSISTANT, true, false);
                 messageToSend.setReplyMarkup(keyboard);
                 messageToSend.setText(String.format("%s для команды : %s.\nИли укажи, что ассистента нет.", Goal.SET_ASSISTANT.getButtonText(), tempRosterType.getColour()));
-                chatStepService.addStep(userCurrentStep, chatId, selectedStep, incomingMessage, gameSessionData.getGameSessionDataDbId());
             } else if (Goal.SET_ASSISTANT.equals(goalCommand) || Goal.SET_NO_ASSISTANT.equals(goalCommand)) {
 
                 //TODO проверить работу
@@ -167,7 +163,6 @@ public class GameResultSelector {
                 var keyboard = createKeyBoard(Goal.SET_BOMBARDIER_OR_NO_GOAL, selectedStep);
 
                 messageToSend.setReplyMarkup(keyboard);
-                chatStepService.addStep(userCurrentStep, chatId, selectedStep, incomingMessage, gameSessionData.getGameSessionDataDbId());
                 messageToSend.setText(String.format("Гол для команды %s добавлен, всего голов %s.\nДобавь еще гол или выбери вторую команду",
                         tempRosterType.getColour(), tempGameResult.getNumberOfGoals(tempRosterType)));
 
