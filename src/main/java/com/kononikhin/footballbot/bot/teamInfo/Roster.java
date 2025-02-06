@@ -4,10 +4,7 @@ import com.kononikhin.footballbot.bot.constants.RosterType;
 import com.kononikhin.footballbot.bot.dao.pojo.PlayerInfo;
 import lombok.Getter;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Getter
 //TODO этот класс должен заменить собой класс Step в GameDayData
@@ -16,8 +13,8 @@ public class Roster {
     private final RosterType rosterType;
     private boolean isRosterFull = false;
     private final Set<String> selectedPlayers = new HashSet<>();
-    //TODO этот список должен собой заменить поле selectedPlayers
-    private final List<PlayerInfo> selectedPlayersDto = new ArrayList<>();
+    //TODO этот список должен собой заменить поле playersByName
+    private final Map<String, PlayerInfo> playersByName = new HashMap<>();
     //TODO использовать этот флаг для функционала игры в неполных составах
     private boolean playInNotFullRoster = false;
 
@@ -27,10 +24,14 @@ public class Roster {
 
     public void addPlayer(String playerName, PlayerInfo playerInfo) {
         selectedPlayers.add(playerName);
-        selectedPlayersDto.add(playerInfo);
+        playersByName.put(playerName, playerInfo);
         if (selectedPlayers.size() == GameSessionData.ROSTER_SIZE) {
             isRosterFull = true;
         }
 
+    }
+
+    public List<PlayerInfo> getAllPlayers() {
+        return new ArrayList<>(playersByName.values());
     }
 }

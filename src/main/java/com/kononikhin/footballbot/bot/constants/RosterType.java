@@ -27,6 +27,10 @@ public enum RosterType {
     @Getter
     private static final Set<RosterType> ALL_ROSTERS = new HashSet<>();
 
+    public static Set<RosterType> getAllRosters(){
+        return new HashSet<>(ALL_ROSTERS);
+    }
+
     static {
         ALL_ROSTERS.addAll(Arrays.asList(RosterType.values()));
     }

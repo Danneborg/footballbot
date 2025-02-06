@@ -36,7 +36,7 @@ public class GameSessionDataSelector {
             var newGameSessionData = gameSessionService.createNewGameSessionData(chatId);
             userRosters.put(chatId, newGameSessionData);
             var keyboard = Utils.createKeyBoard(Step.ROSTERS);
-            messageToSend.setText(Step.START_GAME_DAY.getStepDescription());
+            messageToSend.setText(Step.START.getStepDescription());
             messageToSend.setReplyMarkup(keyboard);
         }
 

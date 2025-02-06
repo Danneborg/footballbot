@@ -88,7 +88,7 @@ public class GameSessionData {
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
 
-        var tempAllRosters = RosterType.getALL_ROSTERS();
+        var tempAllRosters = new HashSet<>(RosterType.getAllRosters());
         tempAllRosters.removeAll(fullRosters);
 
         return tempAllRosters.stream()

@@ -30,9 +30,6 @@ import java.util.function.Consumer;
 @RequiredArgsConstructor
 public class GameSessionStatisticSelector {
 
-    private final ChatStepService chatStepService;
-    private final GameSessionService gameSessionService;
-
     //TODO надо как-то написать на это тест, хз вообще как, но сделать
     public SendMessage createMessage(Long chatId, GameSessionData tempGameData, Map<Long, Step> userCurrentStep, String lastMessage) {
         SendMessage messageToSend = new SendMessage();
